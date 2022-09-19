@@ -44,7 +44,17 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         ("enabled", config_options.Type(bool, default=True)),
     )
 
+    enabled = True
+
+    def on_startup(self, command, dirty: bool) -> None:
+        if command == "serve":
+            self.enabled = False
+        else:
+            self.enabled = True
+
     def on_config(self, config: config_options.Config, **kwargs) -> Dict[str, Any]:
+        if not self.enabled:
+            return config
         """
         Determine which locale to use.
 
@@ -142,6 +152,8 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
     def on_page_markdown(
         self, markdown: str, page: Page, config: config_options.Config, files, **kwargs
     ) -> str:
+        if not self.enabled:
+            return markdown
         """
         Replace jinja2 tags in markdown and templates with the localized dates.
 
@@ -285,6 +297,8 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         return markdown
 
     def on_post_build(self, config: Dict[str, Any], **kwargs) -> None:
+        if not self.enabled:
+            return None
         """
         Run on post build.
 
