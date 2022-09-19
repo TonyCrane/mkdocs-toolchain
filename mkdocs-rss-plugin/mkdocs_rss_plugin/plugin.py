@@ -69,8 +69,17 @@ class GitRssPlugin(BasePlugin):
         # prepare output feeds
         self.feed_created = dict
         self.feed_updated = dict
+        self.enabled = True
+    
+    def on_startup(self, command, dirty: bool) -> None:
+        if command == "serve":
+            self.enabled = False
+        else:
+            self.enabled = True
 
     def on_config(self, config: config_options.Config) -> dict:
+        if not self.enabled:
+            return config
         """The config event is the first event called on build and
         is run immediately after the user configuration is loaded and validated.
         Any alterations to the config should be made here.
@@ -163,6 +172,8 @@ class GitRssPlugin(BasePlugin):
     def on_page_content(
         self, html: str, page: Page, config: config_options.Config, files
     ) -> str:
+        if not self.enabled:
+            return
         """The page_content event is called after the Markdown text is rendered
         to HTML (but before being passed to a template) and can be used to alter
         the HTML body of the page.
@@ -241,6 +252,8 @@ class GitRssPlugin(BasePlugin):
         )
 
     def on_post_build(self, config: config_options.Config) -> dict:
+        if not self.enabled:
+            return
         """The post_build event does not alter any variables. \
         Use this event to call post-build scripts. \
         See: <https://www.mkdocs.org/user-guide/plugins/#on_post_build>
