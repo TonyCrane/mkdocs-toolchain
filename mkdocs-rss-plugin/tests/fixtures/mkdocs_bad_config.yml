@@ -1,0 +1,7 @@
+site_name: Test RSS Plugin - Bad config
+use_directory_urls: true
+
+plugins:
+    - search
+    - rss:
+        type: somethingwrong
