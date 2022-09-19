@@ -52,7 +52,7 @@ class _LoggerAdapter(logging.LoggerAdapter):
         return time.strftime("[%H:%M:%S] ") + msg, kwargs
 
 
-log = _LoggerAdapter(logging.getLogger(__name__), {})
+log = logging.getLogger(__name__)
 
 
 class LiveReloadServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGIServer):

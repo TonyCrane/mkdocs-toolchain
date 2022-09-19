@@ -11,6 +11,7 @@ import traceback
 import warnings
 
 import click
+from rich.logging import RichHandler
 
 from mkdocs import __version__, config, utils
 
@@ -46,8 +47,9 @@ def _showwarning(message, category, filename, lineno, file=None, line=None):
 
 
 def _enable_warnings():
-    warnings.simplefilter('module', DeprecationWarning)
-    warnings.showwarning = _showwarning
+    # warnings.simplefilter('module', DeprecationWarning)
+    # warnings.showwarning = _showwarning
+    pass
 
 
 class ColorFormatter(logging.Formatter):
@@ -89,8 +91,7 @@ class State:
         self.logger.setLevel(1)
         self.logger.propagate = False
 
-        self.stream = logging.StreamHandler()
-        self.stream.setFormatter(ColorFormatter())
+        self.stream = RichHandler()
         self.stream.setLevel(level)
         self.stream.name = 'MkDocsStreamHandler'
         self.logger.addHandler(self.stream)

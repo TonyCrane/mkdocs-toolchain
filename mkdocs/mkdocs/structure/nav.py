@@ -158,12 +158,13 @@ def get_navigation(files: Files, config: Config) -> Navigation:
 
     missing_from_config = [file for file in files.documentation_pages() if file.page is None]
     if missing_from_config:
-        log.info(
-            'The following pages exist in the docs directory, but are not '
-            'included in the "nav" configuration:\n  - {}'.format(
-                '\n  - '.join(file.src_path for file in missing_from_config)
+        if len(missing_from_config) != 1:
+            log.info(
+                'The following pages exist in the docs directory, but are not '
+                'included in the "nav" configuration:\n  - {}'.format(
+                    '\n  - '.join(file.src_path for file in missing_from_config if file.src_path != "todo.md")
+                )
             )
-        )
         # Any documentation files not found in the nav should still have an associated page, so we
         # create them here. The Page object will automatically be assigned to `file.page` during
         # its creation (and this is the only way in which these page objects are accessible).

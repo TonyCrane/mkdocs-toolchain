@@ -319,6 +319,8 @@ class _RelativePathTreeprocessor(Treeprocessor):
         # Validate that the target exists in files collection.
         target_file = self.files.get_file_from_path(target_uri)
         if target_file is None:
+            if target_uri.endswith("htm") or target_uri.endswith("html"):
+                return url
             log.warning(
                 f"Documentation file '{self.file.src_uri}' contains a link to "
                 f"'{target_uri}' which is not found in the documentation files."
