@@ -166,7 +166,7 @@ class encryptContentPlugin(BasePlugin):
             logger.debug('"highlightjs" value detected on theme config, enable rendering after decryption.')
             self.config['hljs'] = config['theme']._vars['highlightjs']
         else:
-            logger.info('"highlightjs" feature is disabled in your plugin configuration.')
+            logger.debug('"highlightjs" feature is disabled in your plugin configuration.')
             self.config['hljs'] = False
         # Check if pymdownx.arithmatex feature need to be enabled, based on markdown_extensions configuration
         if ('pymdownx.arithmatex' in config['markdown_extensions']
@@ -174,14 +174,14 @@ class encryptContentPlugin(BasePlugin):
             logger.debug('"arithmatex" value detected on extensions config, enable rendering after decryption.')
             self.config['arithmatex'] = True
         else:
-            logger.info('"arithmatex" feature is disabled in your plugin configuration.')
+            logger.debug('"arithmatex" feature is disabled in your plugin configuration.')
             self.config['arithmatex'] = False
         # Check if mermaid feature need to be enabled, based on plugin configuration
         if config['plugins'].get('mermaid2') and self.config['mermaid2'] is not False:
             logger.debug('"mermaid2" value detected on extensions config, enable rendering after decryption.')
             self.config['mermaid2'] = True
         else:
-            logger.info('"mermaid2" feature is disabled in your plugin configuration.')
+            logger.debug('"mermaid2" feature is disabled in your plugin configuration.')
             self.config['mermaid2'] = False
         # Warn about deprecated features on Vervion 2.0.0
         deprecated_options_detected = False
@@ -191,7 +191,7 @@ class encryptContentPlugin(BasePlugin):
         if self.config.get('decrypt_search'):
             logger.warning('DEPRECATED: Feature "decrypt_search" is no longer supported. Use search_index on "clear" mode instead.')
             deprecated_options_detected = True
-            logger.info('Fallback "decrypt_search" configuraiton to "search_index" mode clear.')
+            logger.debug('Fallback "decrypt_search" configuraiton to "search_index" mode clear.')
             self.config['search_index'] = 'clear'
         if deprecated_options_detected:
             logger.warning('DEPRECATED: Features marked as deprecated will be remove in next minor version !')
@@ -202,7 +202,7 @@ class encryptContentPlugin(BasePlugin):
             config['plugins'].move_to_end('encryptcontent')
         # Enable experimental code .. :popcorn:
         if self.config['search_index'] == 'dynamically':
-            logger.info('EXPERIMENTAL MODE ENABLE. Only work with default SearchPlugin, not Material.')
+            logger.debug('EXPERIMENTAL MODE ENABLE. Only work with default SearchPlugin, not Material.')
             self.config['experimental'] = True
 
     def on_pre_build(self, config, **kwargs):
