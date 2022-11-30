@@ -1,0 +1,3 @@
+[submodule "mkdocs-changelog-plugin"]
+	path = mkdocs-changelog-plugin
+	url = https://github.com/TonyCrane/mkdocs-changelog-plugin
