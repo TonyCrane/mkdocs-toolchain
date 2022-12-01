@@ -11,6 +11,7 @@ from os import environ, path
 # 3rd party
 from git import Git
 
+logger = logging.getLogger("mkdocs.mkdocs_rss_plugin")
 
 # ############################################################################
 # ########## Functions #############
@@ -30,7 +31,7 @@ class CiHandler:
         # Gitlab Runners
         if environ.get("GITLAB_CI") and n_commits < 50:
             # Default is GIT_DEPTH of 50 for gitlab
-            logging.warning(
+            logger.warning(
                 """
                     [rss-plugin] Running on a gitlab runner might lead to wrong \
                     git revision dates due to a shallow git fetch depth. \
@@ -42,7 +43,7 @@ class CiHandler:
         # Github Actions
         if environ.get("GITHUB_ACTIONS") and n_commits == 1:
             # Default is fetch-depth of 1 for github actions
-            logging.warning(
+            logger.warning(
                 """
                     [rss-plugin] Running on github actions might lead to wrong \
                     git revision dates due to a shallow git fetch depth. \
@@ -54,7 +55,7 @@ class CiHandler:
         # Bitbucket pipelines
         if environ.get("CI") and n_commits < 50:
             # Default is fetch-depth of 50 for bitbucket pipelines
-            logging.warning(
+            logger.warning(
                 """
                     [rss-plugin] Running on bitbucket pipelines might lead to wrong \
                     git revision dates due to a shallow git fetch depth. \
@@ -67,7 +68,7 @@ class CiHandler:
         # Azure Devops Pipeline
         # Does not limit fetch-depth by default
         if environ.get("Agent.Source.Git.ShallowFetchDepth", 10e99) < n_commits:
-            logging.warning(
+            logger.warning(
                 """
                     [rss-plugin] Running on Azure pipelines \
                     with limited fetch-depth might lead to wrong git revision dates \

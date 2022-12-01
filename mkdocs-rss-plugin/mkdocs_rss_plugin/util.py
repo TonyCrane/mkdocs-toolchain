@@ -60,12 +60,12 @@ class Util:
             self.repo = git_repo.git
             self.git_is_valid = 1
         except InvalidGitRepositoryError as err:
-            logging.warning(
+            logger.warning(
                 "[rss-plugin] Path is not a valid git directory. " " Trace: %s" % err
             )
             self.git_is_valid = 0
         except Exception as err:
-            logging.warning("[rss-plugin] Git issue: %s" % err)
+            logger.warning("[rss-plugin] Git issue: %s" % err)
             self.git_is_valid = 0
 
         # Checks if user is running builds on CI and raise appropriate warnings
@@ -158,13 +158,13 @@ class Util:
                         format="%at",
                     )
             except GitCommandError as err:
-                logging.warning(
+                logger.warning(
                     "[rss-plugin] Unable to read git logs of '%s'. Is git log readable?"
                     " Falling back to build date. "
                     " Trace: %s" % (in_page.file.abs_src_path, err)
                 )
             except GitCommandNotFound as err:
-                logging.error(
+                logger.error(
                     "[rss-plugin] Unable to perform command 'git log'. Is git installed? "
                     " Falling back to build date. "
                     " Trace: %s" % err
@@ -180,7 +180,7 @@ class Util:
                 int(dt_updated),
             )
         else:
-            logging.warning(
+            logger.warning(
                 "[rss-plugin] Dates could not be retrieved for page: %s."
                 % in_page.file.abs_src_path
             )
@@ -206,7 +206,7 @@ class Util:
             elif isinstance(in_page.meta.get("author"), (list, tuple)):
                 return tuple(in_page.meta.get("author"))
             else:
-                logging.warning(
+                logger.warning(
                     "[rss-plugin] Type of author value in page.meta (%s) is not valid. "
                     "It should be str, list or tuple, not: %s."
                     % in_page.file.abs_src_path,
@@ -219,7 +219,7 @@ class Util:
             elif isinstance(in_page.meta.get("authors"), (list, tuple)):
                 return tuple(in_page.meta.get("authors"))
             else:
-                logging.warning(
+                logger.warning(
                     "[rss-plugin] Type of authors value in page.meta (%s) is not valid. "
                     "It should be str, list or tuple, not: %s."
                     % in_page.file.abs_src_path,
@@ -414,7 +414,7 @@ class Util:
             remote_img = request.urlopen(url=req, context=ssl_context)
             img_length = remote_img.getheader("content-length")
         except (HTTPError, URLError) as err:
-            logging.warning(
+            logger.warning(
                 "[rss-plugin] Remote image could not been reached: {}. "
                 "Trying again with GET and disabling SSL verification. Attempt: {}. "
                 "Trace: {}".format(image_url, attempt, err)
@@ -427,7 +427,7 @@ class Util:
                     ssl_context=ssl._create_unverified_context(),
                 )
             else:
-                logging.error(
+                logger.error(
                     "[rss-plugin] Remote image is not reachable: {} after {} attempts. "
                     " Trace: {}".format(
                         image_url,
