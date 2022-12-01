@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 
 import jinja2
 from jinja2.exceptions import TemplateNotFound
+from rich.progress import track
 
 import mkdocs
 from mkdocs import utils
@@ -304,7 +305,7 @@ def build(config: Config, live_server: bool = False, dirty: bool = False) -> Non
         nav = config['plugins'].run_event('nav', nav, config=config, files=files)
 
         log.debug("Reading markdown pages.")
-        for file in files.documentation_pages():
+        for file in track(files.documentation_pages(), description="[red]Rendering pages...", transient=True):
             log.debug(f"Reading: {file.src_uri}")
             assert file.page is not None
             _populate_page(file.page, config, files, dirty)
@@ -326,7 +327,7 @@ def build(config: Config, live_server: bool = False, dirty: bool = False) -> Non
 
         log.debug("Building markdown pages.")
         doc_files = files.documentation_pages()
-        for file in doc_files:
+        for file in track(doc_files, description="[cyan]Building pages...", transient=True):
             assert file.page is not None
             _build_page(file.page, config, doc_files, nav, env, dirty)
 

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Sequ
 from urllib.parse import quote as urlquote
 
 import jinja2.environment
+from rich.progress import track
 
 from mkdocs import utils
 from mkdocs.config.base import Config
@@ -68,7 +69,7 @@ class Files:
 
     def copy_static_files(self, dirty: bool = False) -> None:
         """Copy static files from source to destination."""
-        for file in self:
+        for file in track(self, description="[green]Copying static files...", transient=True):
             if not file.is_documentation_page():
                 file.copy_file(dirty)
 
