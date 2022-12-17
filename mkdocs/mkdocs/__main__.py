@@ -136,6 +136,7 @@ watch_theme_help = (
     "Ignored when live reload is not used."
 )
 shell_help = "Use the shell when invoking Git."
+skip_build_help = "Skip the build step. Only deploy the site directory."
 watch_help = "A directory or file to watch for live reloading. Can be supplied multiple times."
 
 
@@ -262,22 +263,24 @@ def build_command(clean, **kwargs):
 @click.option('--no-history', is_flag=True, help=no_history_help)
 @click.option('--ignore-version', is_flag=True, help=ignore_version_help)
 @click.option('--shell', is_flag=True, help=shell_help)
+@click.option('--skip-build', is_flag=True, help=skip_build_help)
 @common_config_options
 @click.option('-d', '--site-dir', type=click.Path(), help=site_dir_help)
 @common_options
 def gh_deploy_command(
-    clean, message, remote_branch, remote_name, force, no_history, ignore_version, shell, **kwargs
+    clean, message, remote_branch, remote_name, force, no_history, ignore_version, shell, skip_build, **kwargs
 ):
     """Deploy your documentation to GitHub Pages"""
     from mkdocs.commands import build, gh_deploy
 
     _enable_warnings()
     cfg = config.load_config(remote_branch=remote_branch, remote_name=remote_name, **kwargs)
-    cfg['plugins'].run_event('startup', command='gh-deploy', dirty=not clean)
-    try:
-        build.build(cfg, dirty=not clean)
-    finally:
-        cfg['plugins'].run_event('shutdown')
+    if not skip_build:
+        cfg['plugins'].run_event('startup', command='gh-deploy', dirty=not clean)
+        try:
+            build.build(cfg, dirty=not clean)
+        finally:
+            cfg['plugins'].run_event('shutdown')
     gh_deploy.gh_deploy(
         cfg,
         message=message,
