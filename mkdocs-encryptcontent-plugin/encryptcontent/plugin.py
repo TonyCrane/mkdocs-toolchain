@@ -101,16 +101,16 @@ class encryptContentPlugin(BasePlugin):
             PADDING_CHAR
         )
 
-    def __encrypt_content__(self, content, base_path):
+    def __encrypt_content__(self, content, base_path, summary, placeholder, encryption_info_message):
         """ Replaces page or article content with decrypt form. """
         ciphertext_bundle = self.__encrypt_text_aes__(content, str(self.config['password']))
         decrypt_form = Template(DECRYPT_FORM_TPL).render({
             # custom message and template rendering
-            'summary': self.config['summary'],
-            'placeholder': self.config['placeholder'],
+            'summary': summary or self.config['summary'],
+            'placeholder': placeholder or self.config['placeholder'],
             'password_button': self.config['password_button'],
             'password_button_text': self.config['password_button_text'],
-            'encryption_info_message': self.config['encryption_info_message'],
+            'encryption_info_message': encryption_info_message or self.config['encryption_info_message'],
             # this benign decoding is necessary before writing to the template,
             # otherwise the output string will be wrapped with b''
             'ciphertext_bundle': b';'.join(ciphertext_bundle).decode('ascii'),
@@ -311,7 +311,10 @@ class encryptContentPlugin(BasePlugin):
             # Set password attributes on page for other mkdocs events
             setattr(page, 'password', str(self.config['password']))
             # Keep encrypted html as temporary variable on page cause we need clear html for search plugin
-            setattr(page, 'html_encrypted', self.__encrypt_content__(html, base_path))
+            setattr(page, 'html_encrypted', self.__encrypt_content__(
+                html, base_path, 
+                *[page.meta.get(key) for key in ['summary', 'placeholder', 'encryption_info_message']]
+            ))
         return html
 
     def on_page_context(self, context, page, config, **kwargs):
