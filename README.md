@@ -9,6 +9,7 @@ My personal mkdocs toolchain, only for personal use.
 - mkdocs-git-revision-date-localized-plugin: [`9cfce40942c83dd15834fb879caa4171a426ecdd`](https://github.com/timvink/mkdocs-git-revision-date-localized-plugin/tree/9cfce40942c83dd15834fb879caa4171a426ecdd)
 - mkdocs-rss-plugin: [`07975d6f4c27759d3bc7845427ac05fe49afd9c1`](https://github.com/Guts/mkdocs-rss-plugin/tree/07975d6f4c27759d3bc7845427ac05fe49afd9c1)
 - mkdocs-material: just using version 8.1.4
+- mkdocs-glightbox: just using version 0.3.1
 
 ## Changes
 
