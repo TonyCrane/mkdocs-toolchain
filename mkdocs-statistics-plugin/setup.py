@@ -11,21 +11,21 @@ def read(fname):
 
 setup(
     name='mkdocs-statistics-plugin',
-    version='0.0.1',
+    version='0.1.0',
     author='TonyCrane',
     author_email='me@tonycrane.cc',
     description='A MkDocs plugin that generate statistic data of a site',
-    # long_description=read('README.md'),
+    long_description=read('README.md'),
     long_description_content_type='text/markdown',
     keywords='mkdocs python markdown statistics',
-    url='',
+    url='https://github.com/TonyCrane/mkdocs-statistics-plugin',
     license='MIT',
     python_requires='>=3.5',
     install_requires=[
         'mkdocs',
     ],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'License :: OSI Approved :: MIT License',

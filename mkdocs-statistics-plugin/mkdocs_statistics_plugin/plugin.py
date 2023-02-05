@@ -8,16 +8,12 @@ from mkdocs.config import config_options
 from mkdocs.plugins import BasePlugin
 from mkdocs.structure.pages import Page
 from mkdocs.structure.files import Files
-from mkdocs.utils import copy_file
 from mkdocs.utils.meta import get_data
 
 from typing import Any, Dict, Optional, Tuple
 
 PLUGIN_DIR = os.path.dirname(os.path.realpath(__file__))
 TEMPLATE_DIR = os.path.join(PLUGIN_DIR, 'templates/page_statistics.html')
-
-with open(TEMPLATE_DIR, 'r') as file:
-    TEMPLATE = file.read()
 
 log = logging.getLogger('mkdocs.mkdocs_statistics_plugin')
 
@@ -27,6 +23,12 @@ class StatisticsPlugin(BasePlugin):
         ('pages_placeholder', config_options.Type(str, default=r'\{\{\s*pages\s*\}\}')),
         ('words_placeholder', config_options.Type(str, default=r'\{\{\s*words\s*\}\}')),
         ('codes_placeholder', config_options.Type(str, default=r'\{\{\s*codes\s*\}\}')),
+        ('page_statistics', config_options.Type(bool, default=True)),
+        ('page_check_metadata', config_options.Type(str, default="")),
+        ('page_read_time', config_options.Type(bool, default=True)),
+        ('page_template', config_options.Type(str, default="")),
+        ('words_per_minute', config_options.Type(int, default=300)),
+        ('codelines_per_minute', config_options.Type(int, default=80))
     )
 
     enabled = True
@@ -35,6 +37,13 @@ class StatisticsPlugin(BasePlugin):
     codes = 0
 
     def on_config(self, config: config_options.Config, **kwargs) -> Dict[str, Any]:
+        page_template = self.config.get("page_template")
+        if page_template == "":
+            with open(TEMPLATE_DIR, 'r') as file:
+                self.template = file.read()
+        else:
+            with open(config['docs_dir'] + '/' + page_template, 'r') as file:
+                self.template = file.read()
         return config
     
     def on_files(self, files: Files, *, config: config_options.Config) -> Optional[Files]:
@@ -57,6 +66,9 @@ class StatisticsPlugin(BasePlugin):
             return markdown
         
         if not self.config.get('enabled'):
+            return markdown
+
+        if page.meta.get("nostatistics"):
             return markdown
         
         if page.meta.get("statistics"):
@@ -84,8 +96,11 @@ class StatisticsPlugin(BasePlugin):
                 flags=re.IGNORECASE,
             )
 
-        if page.meta.get("comment") and (not page.meta.get("nostatistics")):
+        if self.config.get("page_statistics") == False:
+            return markdown
 
+        page_check_metadata = self.config.get("page_check_metadata")
+        if page_check_metadata == "" or page.meta.get(page_check_metadata):
             code_lines = 0
             chinese, english, codes = self._split_markdown(markdown)
             words = len(chinese) + len(english.split())
@@ -98,12 +113,21 @@ class StatisticsPlugin(BasePlugin):
                 if re.match(r"\s*# ", line):
                     h1 = idx
                     break
-            read_time = round(words / 300 + code_lines / 80)
-            page_statistics_content = Template(TEMPLATE).render(
-                words = words,
-                code_lines = code_lines,
-                read_time = read_time
-            )
+            if self.config.get("page_read_time"):
+                read_time = round(
+                    words / self.config.get("words_per_minute") + \
+                    code_lines / self.config.get("codelines_per_minute")
+                )
+                page_statistics_content = Template(self.template).render(
+                    words = words,
+                    code_lines = code_lines,
+                    read_time = read_time
+                )
+            else:
+                page_statistics_content = Template(self.template).render(
+                    words = words,
+                    code_lines = code_lines,
+                )
             lines.insert(h1 + 1, page_statistics_content)
             markdown = "\n".join(lines)
 
