@@ -98,6 +98,7 @@ def serve(
             # Watch the documentation files, the config file and the theme files.
             server.watch(config['docs_dir'])
             server.watch(config['config_file_path'])
+            server.watch('overrides')
 
             if watch_theme:
                 for d in config['theme'].dirs:
