@@ -11,6 +11,11 @@
 - [TonyCrane/mkdocs-heti-plugin](https://github.com/TonyCrane/mkdocs-heti-plugin)
 - [TonyCrane/mkdocs-statistics-plugin](https://github.com/TonyCrane/mkdocs-statistics-plugin)
 
+未单独发布插件：
+
+- mkdocs-linkbackward-plugin: 为了链接兼容性创建跳转页面
+- mkdocs-tikzautomata-plugin: 在 markdown 中直接编写 tikz 并嵌入 svg，修改自 [FrightenedFoxCN/mkdocs-mathenv-plugin](https://github.com/FrightenedFoxCN/mkdocs-mathenv-plugin/)
+
 ## 各包原始 commit sha
 
 - mkdocs: [`730da08158b05374c4230f9785dd7f5068801fe3`](https://github.com/mkdocs/mkdocs/tree/730da08158b05374c4230f9785dd7f5068801fe3)
