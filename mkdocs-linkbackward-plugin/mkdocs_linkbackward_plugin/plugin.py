@@ -19,7 +19,18 @@ class LinkBackwardPlugin(BasePlugin):
         ('redirections', config_options.Type(list, default=[])),
     )
 
+    enabled = True
+
+    def on_startup(self, command, dirty: bool) -> None:
+        if command == "serve":
+            self.enabled = False
+        else:
+            self.enabled = True
+
     def on_config(self, config: config_options.Config, **kwargs) -> Dict[str, Any]:
+        if not self.enabled:
+            return config
+        
         if not self.config.get('enabled'):
             return config
         
@@ -46,6 +57,9 @@ class LinkBackwardPlugin(BasePlugin):
         return config
 
     def on_post_build(self, config: Dict[str, Any], **kwargs) -> None:
+        if not self.enabled:
+            return
+        
         site_dir = config["site_dir"]
         template_file_path = os.path.join(site_dir, 'redirection.html')
         with open(template_file_path, 'r', encoding='utf-8') as f:
