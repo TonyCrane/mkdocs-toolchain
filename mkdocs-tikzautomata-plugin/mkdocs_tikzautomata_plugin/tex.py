@@ -40,6 +40,8 @@ class TeXWriter:
             program = "xelatex -no-pdf"
         else:
             raise NotImplementedError(f"Compiler {self.config.compiler} is not implemented!")
+        
+        log.info(f"rendering {tex_name}.svg")
 
         # use compiler to transform tex to pdf
         tex2xdv_cmd = " ".join((
@@ -50,7 +52,7 @@ class TeXWriter:
             ">",
             os.devnull
         ))
-
+        log.debug(f"running {tex2xdv_cmd}")
         if os.system(tex2xdv_cmd):
             log.error(
                 "LaTeX Error! Not a worry, it happens to the best of us."
@@ -67,7 +69,7 @@ class TeXWriter:
             ">",
             os.devnull
         ))
-        log.info(f"running {xdv2svg_cmd}")
+        log.debug(f"running {xdv2svg_cmd}")
         if os.system(xdv2svg_cmd):
             log.error(
                 "dvisvgm Error!"

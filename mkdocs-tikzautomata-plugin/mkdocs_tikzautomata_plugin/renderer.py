@@ -19,7 +19,7 @@ class TikZAutomataRenderer:
                 log.error("[tikzautomata] cache directory not found!")
 
         if cachefile == True and os.path.exists(f"{filename}.svg"):
-            log.info("[tikzautomata] load from existed file...")
+            log.debug("[tikzautomata] load from existing file...")
             with open(f"{filename}.svg", "r", encoding="utf-8") as f:
                 svg_str = f.read(None)
             os.chdir("..")

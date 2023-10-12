@@ -4,7 +4,7 @@ def replace_standalone_words(word: str, target: str, string: str) -> str:
     return re.sub(f"\\b{word}\\b", target, string)
 
 def replace_indented_block_start_with_options(target, handle, string):
-    return re.sub(rf"({target}(\[(?P<options>.*)\])?(\\zoom{{(?P<zoom>.*)}})?.*\n(?P<contents>(((\t|(    )).*)|\n)*))", handle, string)
+    return re.sub(rf"(?P<leading>[ \t]*?)({target}(\[(?P<options>.*)\])?(\\zoom{{(?P<zoom>.*)}})?.*\n(?P<contents>(((?P=leading)(\t|(    )).*)|\n)*))", handle, string)
 
 def get_indentation_level(str):
     return (len(str) - len(str.lstrip())) // 4
