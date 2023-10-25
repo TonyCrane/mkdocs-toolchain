@@ -7,6 +7,7 @@
 # standard library
 import logging
 from copy import deepcopy
+from datetime import datetime
 from email.utils import formatdate
 from pathlib import Path
 from re import compile
@@ -14,6 +15,7 @@ from re import compile
 # 3rd party
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from mkdocs.config import config_options
+from mkdocs.exceptions import PluginError
 from mkdocs.plugins import BasePlugin
 from mkdocs.structure.pages import Page
 from mkdocs.utils import get_build_timestamp
@@ -45,6 +47,7 @@ class GitRssPlugin(BasePlugin):
 
     config_scheme = (
         ("abstract_chars_count", config_options.Type(int, default=160)),
+        ("abstract_delimiter", config_options.Type(str, default="<!-- more -->")),
         ("categories", config_options.Type(list, default=None)),
         ("comments_path", config_options.Type(str, default=None)),
         ("date_from_meta", config_options.Type(dict, default=None)),
@@ -55,31 +58,23 @@ class GitRssPlugin(BasePlugin):
         ("match_path", config_options.Type(str, default=".*")),
         ("pretty_print", config_options.Type(bool, default=False)),
         ("url_parameters", config_options.Type(dict, default=None)),
+        ("use_git", config_options.Type(bool, default=True)),
     )
 
     def __init__(self):
         """Instanciation."""
-        # tooling
-        self.util = Util()
         # dates source
         self.src_date_created = self.src_date_updated = "git"
         self.meta_datetime_format = None
+        self.meta_default_timezone = "UTC"
+        self.meta_default_time = None
         # pages storage
         self.pages_to_filter = []
         # prepare output feeds
         self.feed_created = dict
         self.feed_updated = dict
-        self.enabled = True
-    
-    def on_startup(self, command, dirty: bool) -> None:
-        if command == "serve":
-            self.enabled = False
-        else:
-            self.enabled = True
 
     def on_config(self, config: config_options.Config) -> dict:
-        if not self.enabled:
-            return config
         """The config event is the first event called on build and
         is run immediately after the user configuration is loaded and validated.
         Any alterations to the config should be made here.
@@ -98,6 +93,9 @@ class GitRssPlugin(BasePlugin):
         if not self.config.get("enabled"):
             return config
 
+        # instanciate plugin tooling
+        self.util = Util(use_git=self.config.get("use_git", True))
+
         # check template dirs
         if not Path(DEFAULT_TEMPLATE_FILENAME).is_file():
             raise FileExistsError(DEFAULT_TEMPLATE_FILENAME)
@@ -111,7 +109,7 @@ class GitRssPlugin(BasePlugin):
             "copyright": config.get("copyright", None),
             "description": config.get("site_description", None),
             "entries": [],
-            "generator": "{} - v{}".format(__title__, __version__),
+            "generator": f"{__title__} - v{__version__}",
             "html_url": self.util.get_site_url(config),
             "language": self.util.guess_locale(config),
             "pubDate": formatdate(get_build_timestamp()),
@@ -138,10 +136,35 @@ class GitRssPlugin(BasePlugin):
             self.meta_datetime_format = self.config.get("date_from_meta").get(
                 "datetime_format", "%Y-%m-%d %H:%M"
             )
-            logger.debug(
-                "[rss-plugin] Dates will be retrieved from page meta (yaml "
-                "frontmatter). The git log will be used as fallback."
+            self.meta_default_timezone = self.config.get("date_from_meta").get(
+                "default_timezone", "UTC"
             )
+            self.meta_default_time = self.config.get("date_from_meta").get(
+                "default_time", None
+            )
+            if self.meta_default_time:
+                try:
+                    self.meta_default_time = datetime.strptime(
+                        self.meta_default_time, "%H:%M"
+                    )
+                except ValueError as err:
+                    raise PluginError(
+                        "[rss-plugin] Config error: `date_from_meta.default_time` value "
+                        f"'{self.meta_default_time}' format doesn't match the expected "
+                        f"format %H:%M. Trace: {err}"
+                    )
+
+            if self.config.get("use_git", True):
+                logger.debug(
+                    "[rss-plugin] Dates will be retrieved FIRSTLY from page meta (yaml "
+                    "frontmatter). The git log will be used as fallback."
+                )
+            else:
+                logger.debug(
+                    "[rss-plugin] Dates will be retrieved ONLY from page meta (yaml "
+                    "frontmatter). The build date will be used as fallback, without any "
+                    "call to Git."
+                )
         else:
             logger.debug("[rss-plugin] Dates will be retrieved from git log.")
 
@@ -159,7 +182,7 @@ class GitRssPlugin(BasePlugin):
                 base_feed.get("html_url") + OUTPUT_FEED_UPDATED
             )
         else:
-            logger.warning(
+            logger.error(
                 "[rss-plugin] The variable `site_url` is not set in the MkDocs "
                 "configuration file whereas a URL is mandatory to publish. "
                 "See: https://validator.w3.org/feed/docs/rss2.html#requiredChannelElements"
@@ -172,8 +195,6 @@ class GitRssPlugin(BasePlugin):
     def on_page_content(
         self, html: str, page: Page, config: config_options.Config, files
     ) -> str:
-        if not self.enabled:
-            return
         """The page_content event is called after the Markdown text is rendered
         to HTML (but before being passed to a template) and can be used to alter
         the HTML body of the page.
@@ -201,12 +222,19 @@ class GitRssPlugin(BasePlugin):
         if not self.match_path_pattern.match(page.file.src_path):
             return
 
+        # skip pages with draft=true
+        if page.meta.get("draft", False) is True:
+            logger.debug(f"Page {page.title} ignored because it's a draft")
+            return
+
         # retrieve dates from git log
         page_dates = self.util.get_file_dates(
             in_page=page,
             source_date_creation=self.src_date_created,
             source_date_update=self.src_date_updated,
             meta_datetime_format=self.meta_datetime_format,
+            meta_default_timezone=self.meta_default_timezone,
+            meta_default_time=self.meta_default_time,
         )
 
         # handle custom URL parameters
@@ -238,7 +266,9 @@ class GitRssPlugin(BasePlugin):
                 ),
                 created=page_dates[0],
                 description=self.util.get_description_or_abstract(
-                    in_page=page, chars_count=self.config.get("abstract_chars_count")
+                    in_page=page,
+                    chars_count=self.config.get("abstract_chars_count"),
+                    abstract_delimiter=self.config.get("abstract_delimiter"),
                 ),
                 guid=page.canonical_url,
                 image=self.util.get_image(
@@ -252,8 +282,6 @@ class GitRssPlugin(BasePlugin):
         )
 
     def on_post_build(self, config: config_options.Config) -> dict:
-        if not self.enabled:
-            return
         """The post_build event does not alter any variables. \
         Use this event to call post-build scripts. \
         See: <https://www.mkdocs.org/user-guide/plugins/#on_post_build>

@@ -20,6 +20,29 @@ from mkdocs_rss_plugin import __about__
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
+with open(HERE / "requirements/base.txt") as f:
+    requirements = [
+        line
+        for line in f.read().splitlines()
+        if not line.startswith(("#", "-")) and len(line)
+    ]
+
+with open(HERE / "requirements/development.txt") as f:
+    requirements_dev = [
+        line
+        for line in f.read().splitlines()
+        if not line.startswith(("#", "-")) and len(line)
+    ]
+
+
+with open(HERE / "requirements/documentation.txt") as f:
+    requirements_docs = [
+        line
+        for line in f.read().splitlines()
+        if not line.startswith(("#", "-")) and len(line)
+    ]
+
+
 # ############################################################################
 # ########## Setup #############
 # ##############################
@@ -29,12 +52,12 @@ setup(
     author=__about__.__author__,
     author_email=__about__.__email__,
     description=__about__.__summary__,
-    license="MIT",
+    license=__about__.__license__,
     long_description=README,
     long_description_content_type="text/markdown",
     project_urls={
         "Docs": "https://guts.github.io/mkdocs-rss-plugin/",
-        "Bug Reports": "{}issues/".format(__about__.__uri__),
+        "Bug Reports": f"{__about__.__uri__}issues/",
         "Source": __about__.__uri__,
     },
     # packaging
@@ -45,25 +68,22 @@ setup(
     # run
     entry_points={"mkdocs.plugins": ["rss = mkdocs_rss_plugin.plugin:GitRssPlugin"]},
     # dependencies
-    python_requires=">=3.7, <4",
+    python_requires=">=3.8, <4",
     extras_require={
-        "dev": ["black", "flake8", "pre-commit"],
-        "test": ["pytest", "pytest-cov"],
+        "dev": requirements_dev,
+        "doc": requirements_docs,
     },
-    install_requires=[
-        "GitPython>=3.1,<3.2",
-        "mkdocs>=1.1,<1.4",
-    ],
+    install_requires=requirements,
     # metadata
     keywords="mkdocs rss git plugin",
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: MIT License",

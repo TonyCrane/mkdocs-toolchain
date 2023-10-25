@@ -58,7 +58,7 @@ class TestBuildRss(BaseTest):
     def tearDownClass(cls):
         """Executed after the last test."""
         # In case of some tests failure, ensure that everything is cleaned up
-        temp_page = Path("tests/fixtures/docs/temp_page_not_in_git_log.md")
+        # temp_page = Path("tests/fixtures/docs/temp_page_not_in_git_log.md")
         # if temp_page.exists():
         #     temp_page.unlink()
 
@@ -71,7 +71,7 @@ class TestBuildRss(BaseTest):
         with tempfile.TemporaryDirectory() as tmpdirname:
             cli_result = self.build_docs_setup(
                 testproject_path="docs",
-                mkdocs_yml_filepath=Path("mkdocs.yml"),
+                mkdocs_yml_filepath=Path("tests/fixtures/mkdocs_simple.yml"),
                 output_path=tmpdirname,
                 strict=False,
             )
@@ -102,7 +102,6 @@ class TestBuildRss(BaseTest):
             # created items
             feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
             for feed_item in feed_parsed.entries:
-
                 # mandatory properties
                 self.assertTrue("description" in feed_item)
                 self.assertTrue("guid" in feed_item)
@@ -137,7 +136,6 @@ class TestBuildRss(BaseTest):
             # created items
             feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
             for feed_item in feed_parsed.entries:
-
                 # mandatory properties
                 self.assertTrue("description" in feed_item)
                 self.assertTrue("guid" in feed_item)
@@ -324,8 +322,39 @@ class TestBuildRss(BaseTest):
             self.assertEqual(feed_parsed.bozo, 0)
 
             for feed_item in feed_parsed.entries:
-                if feed_item.title not in ("Page without meta with short text",):
-                    self.assertGreaterEqual(len(feed_item.description), 150)
+                if feed_item.title not in (
+                    "Page without meta with short text",
+                    "Blog sample",
+                ):
+                    self.assertGreaterEqual(
+                        len(feed_item.description), 150, feed_item.title
+                    )
+
+    def test_simple_build_lang_with_territory(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_lang_with_territory.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            self.assertEqual(feed_parsed.feed.get("language"), "en-US")
+
+            # updated items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_updated.xml")
+            self.assertEqual(feed_parsed.feed.get("language"), "en-US")
 
     def test_simple_build_pretty_print_enabled(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -401,6 +430,21 @@ class TestBuildRss(BaseTest):
             # some feed characteristics
             self.assertEqual(feed_parsed.version, "rss20")
 
+    def test_config_no_site_url(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_minimal_no_site_url.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+
+            # cli should returns an error code (1)
+            self.assertEqual(cli_result.exit_code, 1)
+            self.assertIsNotNone(cli_result.exception)
+
     def test_bad_config(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
             cli_result = self.build_docs_setup(
@@ -450,7 +494,7 @@ class TestBuildRss(BaseTest):
         with tempfile.TemporaryDirectory() as tmpdirname:
             cli_result = self.build_docs_setup(
                 testproject_path="docs",
-                mkdocs_yml_filepath=Path("tests/fixtures/mkdocs_disabled.yml"),
+                mkdocs_yml_filepath=Path("tests/fixtures/mkdocs_complete.yml"),
                 output_path=tmpdirname,
                 strict=True,
             )

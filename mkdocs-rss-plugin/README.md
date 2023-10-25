@@ -37,6 +37,7 @@ Full options:
 plugins:
   - rss:
       abstract_chars_count: 160  # -1 for full content
+      abstract_delimiter: <!-- more -->
       categories:
         - tags
       comments_path: "#__comments"
@@ -44,6 +45,8 @@ plugins:
         as_creation: "date"
         as_update: false
         datetime_format: "%Y-%m-%d %H:%M"
+        default_timezone: Europe/Paris
+        default_time: "09:30"
       enabled: true
       feed_ttl: 1440
       image: https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Feed-icon.svg/128px-Feed-icon.svg.png
@@ -65,11 +68,12 @@ Following initiative from the author of Material for MkDocs, this plugin provide
 Clone the repository:
 
 ```bash
-# install project as editable
-python -m pip install -U -r requirements.txt
-
 # install development dependencies
 python -m pip install -U -r requirements/development.txt
+# alternatively: pip install -e .[dev]
+
+# install project as editable
+python -m pip install -e .
 
 # install git hooks
 pre-commit install
@@ -79,6 +83,7 @@ pytest
 
 # install dependencies for documentation
 python -m pip install -U -r requirements/documentation.txt
+# alternatively: pip install -e .[doc]
 ```
 
 Then follow the [contribution guidelines](CONTRIBUTING.md).

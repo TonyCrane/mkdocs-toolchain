@@ -57,6 +57,7 @@ class TestConfig(BaseTest):
         # default reference
         expected = {
             "abstract_chars_count": 160,
+            "abstract_delimiter": "<!-- more -->",
             "categories": None,
             "comments_path": None,
             "date_from_meta": None,
@@ -67,6 +68,7 @@ class TestConfig(BaseTest):
             "pretty_print": False,
             "match_path": ".*",
             "url_parameters": None,
+            "use_git": True,
         }
 
         # load
@@ -80,6 +82,7 @@ class TestConfig(BaseTest):
         # reference
         expected = {
             "abstract_chars_count": 160,
+            "abstract_delimiter": "<!-- more -->",
             "categories": None,
             "comments_path": None,
             "date_from_meta": None,
@@ -90,6 +93,7 @@ class TestConfig(BaseTest):
             "pretty_print": False,
             "match_path": ".*",
             "url_parameters": None,
+            "use_git": True,
         }
 
         # custom config
@@ -103,8 +107,10 @@ class TestConfig(BaseTest):
         self.assertEqual(warnings, [])
 
     def test_plugin_config_through_mkdocs(self):
-        plg_cfg = self.get_plugin_config_from_mkdocs(Path("mkdocs.yml"), "rss")
-        self.assertIsInstance(plg_cfg, Config)
+        for config_filepath in self.config_files:
+            plg_cfg = self.get_plugin_config_from_mkdocs(config_filepath, "rss")
+            print(config_filepath)
+            self.assertIsInstance(plg_cfg, Config)
 
 
 # ##############################################################################

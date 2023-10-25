@@ -16,12 +16,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 -->
+## 1.8.0 - 2023-07-24
+
+### Bugs fixes 🐛
+
+* Fix tests config by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/196>
+
+### Features and enhancements 🎉
+
+* Add option to enable/disable git use. by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/187>
+
+## 1.7.0 - 2023-05-28
+
+### Bugs fixes 🐛
+
+* Fix tests: restore missing `__init__.py` file to make tests a subpackage by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/190>
+
+### Features and enhancements 🎉
+
+* Comply language codes with RSS Spec by @YDX-2147483647 in <https://github.com/Guts/mkdocs-rss-plugin/pull/178>
+
+### Tooling 🔧
+
+* Documentation: housekeeping dependencies and CI by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/175>
+
+### Documentation 📖
+
+* Doc: typo & tips by @YDX-2147483647 in <https://github.com/Guts/mkdocs-rss-plugin/pull/179>
+
+### Other Changes
+
+* Improve: strip image URL to avoid common errors by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/180>
+* Dev tooling: extend git hooks by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/189>
+
+## 1.6.0 - 2023-02-21
+
+### Bugs fixes 🐛
+
+* Improve: handle missing site url by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/150>
+* Upgrade git hooks to fix fail because of isort by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/170>
+
+### Features and enhancements 🎉
+
+* Tests: more use cases, better coverage by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/152>
+* Handle abstract_chars_count set to 0 by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/172>
+* Add new option abstract_delimiter by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/173>
+
+### Tooling 🔧
+
+* Add Python 3.11 to supported versions by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/157>
+* Just a little refresh on CI workflows by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/158>
+* CI : disable fail fast on tests matrix to get all Python versions results by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/159>
+* CI: sse GA to deploy to GH Pages instead of ghp-import by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/171>
+* Remove Python 3.7 support by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/174>
+
+## 1.5.0 - 2022-10-13
+
+### Added
+
+* Feature: ignore pages with draft:true in meta by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/149>
+
+### Changed
+
+* Require tzdata only on Windows by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/148>
+
+## 1.4.1 - 2022-10-07
+
+### Changed
+
+* Set Mkdocs upper cap to major version by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/146> to comply with the discussion opened by @oprypin in #137
+
+## 1.4.0 - 2022-10-07
+
+### Added
+
+* Feature: add default_time option by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/145>
+
+### Changed
+
+* Minor improvements: clean unused imports, lines length and use fstrings in logging by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/143>
+* Improvement: more granular fallback to build timestamp by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/144>
+
+## 1.3.0 - 2022-10-07
+
+### Added
+
+* Feature: add option to set default timezone by @Guts in <https://github.com/Guts/mkdocs-rss-plugin/pull/142>
+
+## 1.2.0 - 2022-10-03
+
+### Changed
+
+* compatibility with Mkdocs 1.4
+* dependencies update
 
 ## 1.1.0 - 2022-04-27
 
 ### Changed
 
-- switched license to MIT. (See #117)
+* switched license to MIT. (See #117)
 
 ## 1.0.0 - 2022-03-31
 
@@ -30,16 +123,16 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- Unit tests to reach a 80% coverage score
+* Unit tests to reach a 80% coverage score
 
 ### Changed
 
-- Supported Mkdocs versions range increased to `mkdocs>=1.1,<1.4`
+* Supported Mkdocs versions range increased to `mkdocs>=1.1,<1.4`
 
 ### Fixed
 
-- Minor bugs fixes
-- Minor documentation improvments
+* Minor bugs fixes
+* Minor documentation improvements
 
 ----
 
@@ -47,8 +140,8 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- JSON Schema for configuration validation
-- compatible with Python 3.10
+* JSON Schema for configuration validation
+* compatible with Python 3.10
 
 ----
 
@@ -56,7 +149,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Fixed
 
-- Error when using "enabled: false" together with "match_path" (see #104 - PR #107). Reported by @prcr, fixed by @dcode. Thanks to them!
+* Error when using "enabled: false" together with "match_path" (see #104 - PR #107). Reported by @prcr, fixed by @dcode. Thanks to them!
 
 ----
 
@@ -64,15 +157,15 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- option to enable/disable the plugin, for example through an environment variable (default: enabled). See: PR #103, [related doc section](https://guts.github.io/mkdocs-rss-plugin/configuration/#disabling-the-plugin)
+* option to enable/disable the plugin, for example through an environment variable (default: enabled). See: PR #103, [related doc section](https://guts.github.io/mkdocs-rss-plugin/configuration/#disabling-the-plugin)
 
 ### Changed
 
-- CI: Python version used to build and publish package is now 3.9
+* CI: Python version used to build and publish package is now 3.9
 
 ### Removed
 
-- support for Python 3.6 (EOL)
+* support for Python 3.6 (EOL)
 
 ----
 
@@ -80,7 +173,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Fixed
 
-- Fix #95: introduced logic did not handle case where categories meta keys are not defined
+* Fix #95: introduced logic did not handle case where categories meta keys are not defined
 
 ----
 
@@ -88,7 +181,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- new option to include [RSS `<category>` item element](https://www.w3schools.com/xml/rss_tag_category_item.asp) using page metadata (YAML frontmatter). It's customizable to get custom meta keys for keywords/tags. PR [#4](https://github.com/Guts/mkdocs-rss-plugin/pull/4)
+* new option to include [RSS `<category>` item element](https://www.w3schools.com/xml/rss_tag_category_item.asp) using page metadata (YAML frontmatter). It's customizable to get custom meta keys for keywords/tags. PR [#4](https://github.com/Guts/mkdocs-rss-plugin/pull/4)
 
 ----
 
@@ -96,11 +189,11 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- option to get the full page content into thed. Contributed by [liang2kl](https://github.com/liang2kl) with [PR 88](https://github.com/Guts/mkdocs-rss-plugin/pull/88). See the [related documentation section](https://guts.github.io/mkdocs-rss-plugin/configuration/#item-description-length).
+* option to get the full page content into thread. Contributed by [liang2kl](https://github.com/liang2kl) with [PR 88](https://github.com/Guts/mkdocs-rss-plugin/pull/88). See the [related documentation section](https://guts.github.io/mkdocs-rss-plugin/configuration/#item-description-length).
 
 ### Changed
 
-- documentation on ReadTheDocs has been removed to reduce confusion and dependencies. [PR #89](https://github.com/Guts/mkdocs-rss-plugin/pull/89).
+* documentation on ReadTheDocs has been removed to reduce confusion and dependencies. [PR #89](https://github.com/Guts/mkdocs-rss-plugin/pull/89).
 
 ----
 
@@ -108,11 +201,11 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Changed
 
-- bump MkDocs maximal version
+* bump MkDocs maximal version
 
 ### Fixed
 
-- improve DockerFile used to test, fixing it after Material removed some dependencies
+* improve DockerFile used to test, fixing it after Material removed some dependencies
 
 ----
 
@@ -120,7 +213,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Fixed
 
-- remove a print statement
+* remove a print statement
 
 ----
 
@@ -128,11 +221,11 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- add option to handle the [RSS item comments element](https://www.w3schools.com/XML/rss_tag_comments.asp) through item URL path (see [documentation](https://guts.github.io/mkdocs-rss-plugin/configuration/#item-comments-path))
+* add option to handle the [RSS item comments element](https://www.w3schools.com/XML/rss_tag_comments.asp) through item URL path (see [documentation](https://guts.github.io/mkdocs-rss-plugin/configuration/#item-comments-path))
 
 ### Changed
 
-- ignore `urllib.error.URLError` exception to avoid build crashes typically when network is offline
+* ignore `urllib.error.URLError` exception to avoid build crashes typically when network is offline
 
 ----
 
@@ -140,12 +233,12 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- ability to define URL parameters on items URLs (see [documentation](https://guts.github.io/mkdocs-rss-plugin/configuration/#url-parameters))
-- complete unit tests and display code coverage badge (using codecov.io)
+* ability to define URL parameters on items URLs (see [documentation](https://guts.github.io/mkdocs-rss-plugin/configuration/#url-parameters))
+* complete unit tests and display code coverage badge (using codecov.io)
 
 ### Changed
 
-- homogenization of docstrings on the sphinx format (as stipulated in the contribution guidelines)
+* homogenization of docstrings on the sphinx format (as stipulated in the contribution guidelines)
 
 ----
 
@@ -153,11 +246,11 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Fixed
 
-- fix `match_path` option by skipping the pages that aren't included. See [PR #49](https://github.com/Guts/mkdocs-rss-plugin/pull/49). Contributed by [Paulo Ribeiro](https://github.com/pauloribeiro-codacy/).
+* fix `match_path` option by skipping the pages that aren't included. See [PR #49](https://github.com/Guts/mkdocs-rss-plugin/pull/49). Contributed by [Paulo Ribeiro](https://github.com/pauloribeiro-codacy/).
 
 ### Added
 
-- add isort to development toolbelt
+* add isort to development toolbelt
 
 ----
 
@@ -165,8 +258,8 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- if `page.meta.description` is not set, the `abstract_chars_count` first characters from markdown content are now converted into HTML.
-- add `match_path` option which should be a regex pattern matching the path to your files within the docs_dir. See [issue #34](https://github.com/Guts/mkdocs-rss-plugin/issues/34) and the related [PR #43](https://github.com/Guts/mkdocs-rss-plugin/pull/43). Contributed by [Ryan Morshead](https://github.com/rmorshea/).
+* if `page.meta.description` is not set, the `abstract_chars_count` first characters from markdown content are now converted into HTML.
+* add `match_path` option which should be a regex pattern matching the path to your files within the docs_dir. See [issue #34](https://github.com/Guts/mkdocs-rss-plugin/issues/34) and the related [PR #43](https://github.com/Guts/mkdocs-rss-plugin/pull/43). Contributed by [Ryan Morshead](https://github.com/rmorshea/).
 
 ----
 
@@ -174,7 +267,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- add support to `page.meta.authors` or `page.meta.author` to populate feed items author tag. See [issue #34](https://github.com/Guts/mkdocs-rss-plugin/issues/34).
+* add support to `page.meta.authors` or `page.meta.author` to populate feed items author tag. See [issue #34](https://github.com/Guts/mkdocs-rss-plugin/issues/34).
 
 ----
 
@@ -182,11 +275,11 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- option to prettify the output, disabling minify. See [issue #18](https://github.com/Guts/mkdocs-rss-plugin/issues/18), [PR #33](https://github.com/Guts/mkdocs-rss-plugin/pull/33) and [related documentation section](https://guts.github.io/mkdocs-rss-plugin/configuration/#prettified-output)
+* option to prettify the output, disabling minify. See [issue #18](https://github.com/Guts/mkdocs-rss-plugin/issues/18), [PR #33](https://github.com/Guts/mkdocs-rss-plugin/pull/33) and [related documentation section](https://guts.github.io/mkdocs-rss-plugin/configuration/#prettified-output)
 
 ### Changed
 
-- By default, the output file is now minified.
+* By default, the output file is now minified.
 
 ----
 
@@ -194,12 +287,12 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- option to use dates from page metadata (YAML front-matter) instead of git log. See [#14](https://github.com/Guts/mkdocs-rss-plugin/pull/14) and [related documentation section](https://guts.github.io/mkdocs-rss-plugin/configuration/#dates-overriding)
-- Python 3.9 is enabled in CI and referenced in PyPi tags
+* option to use dates from page metadata (YAML front-matter) instead of git log. See [#14](https://github.com/Guts/mkdocs-rss-plugin/pull/14) and [related documentation section](https://guts.github.io/mkdocs-rss-plugin/configuration/#dates-overriding)
+* Python 3.9 is enabled in CI and referenced in PyPi tags
 
 ### Changed
 
-- the default length for description has been changed from 150 to 160 to fit maximum recommendation
+* the default length for description has been changed from 150 to 160 to fit maximum recommendation
 
 ----
 
@@ -207,8 +300,8 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Improved
 
-- enable auto-escape on feed and item titles, using the Jinja e filter - see #19
-- improve consistency for missing attributes in mkdocs.yml, returning almost always a None value
+* enable auto-escape on feed and item titles, using the Jinja e filter - see #19
+* improve consistency for missing attributes in mkdocs.yml, returning almost always a None value
 
 ----
 
@@ -216,11 +309,11 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- RSS compliance: image length is now present into enclosure tags - See #9
-- User documentation:
-  - clarify how item elements are computed
-  - add how to edit HTML templates meta-tags to reference feeds
-- API reference documentation generated from source code and published through Read The Docs
+* RSS compliance: image length is now present into enclosure tags - See #9
+* User documentation:
+  * clarify how item elements are computed
+  * add how to edit HTML templates meta-tags to reference feeds
+* API reference documentation generated from source code and published through Read The Docs
 
 ----
 
@@ -228,7 +321,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Fixed
 
-- wrong items order in updated feed
+* wrong items order in updated feed
 
 ----
 
@@ -236,7 +329,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Fixed
 
-- feed for updated content is broken - #15
+* feed for updated content is broken - #15
 
 ----
 
@@ -244,15 +337,15 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- plugin: add the `language` tag to the channel
-- tooling:
-  - add first unit tests and code coverage
-  - add Github Action to perform tests
-  - check docker build using mkdocs-material
+* plugin: add the `language` tag to the channel
+* tooling:
+  * add first unit tests and code coverage
+  * add Github Action to perform tests
+  * check docker build using mkdocs-material
 
 ### Changed
 
-- docs: switch Feedly images from HTTP to HTTPS
+* docs: switch Feedly images from HTTP to HTTPS
 
 ----
 
@@ -260,7 +353,7 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Fixed
 
-- remove print from plugin code
+* remove print from plugin code
 
 ----
 
@@ -268,11 +361,11 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- plugin: add tag `guid` to the feed's items (using the page URL)
+* plugin: add tag `guid` to the feed's items (using the page URL)
 
 ### Changed
 
-- docs: minor improvments
+* docs: minor improvements
 
 ----
 
@@ -280,8 +373,8 @@ So, no feature in this release, just focusing on quality and code cleanliness.
 
 ### Added
 
-- plugin: handle channel `image` and items (entries) `enclosure`
+* plugin: handle channel `image` and items (entries) `enclosure`
 
 ### Changed
 
-- plugin: refactoring to build feed entry through a method
+* plugin: refactoring to build feed entry through a method

@@ -20,8 +20,6 @@ from mkdocs.__main__ import build_command
 from mkdocs.config import load_config
 from mkdocs.config.base import Config
 
-logger = logging.getLogger("mkdocs.mkdocs_rss_plugin")
-
 # #############################################################################
 # ########## Classes ###############
 # ##################################
@@ -49,7 +47,7 @@ class BaseTest(unittest.TestCase):
 
         plugins = cfg_mkdocs.get("plugins")
         if "rss" not in plugins:
-            logger.warning(
+            logging.warning(
                 f"Plugin {plugin_name} is not part of enabled plugin in the MkDocs "
                 "configuration file: {mkdocs_yml_filepath}"
             )
@@ -57,7 +55,7 @@ class BaseTest(unittest.TestCase):
         plugin_loaded = plugins.get("rss")
 
         cfg = plugin_loaded.on_config(cfg_mkdocs)
-        logger.info("Fixture configuration loaded: " + str(cfg))
+        logging.info("Fixture configuration loaded: " + str(cfg))
 
         return plugin_loaded.config
 
@@ -98,7 +96,7 @@ class BaseTest(unittest.TestCase):
             run = runner.invoke(build_command, cmd_args)
             return run
         except Exception as err:
-            logger.critical(err)
+            logging.critical(err)
             return False
 
     def setup_clean_mkdocs_folder(
@@ -122,7 +120,7 @@ class BaseTest(unittest.TestCase):
 
         # Create empty 'testproject' folder
         if testproject_path.exists():
-            logger.warning(
+            logging.warning(
                 """This command does not work on windows.
             Refactor your test to use setup_clean_mkdocs_folder() only once"""
             )

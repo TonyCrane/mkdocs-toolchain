@@ -14,8 +14,6 @@ docs_dir: "docs/"
 use_directory_urls: true
 
 plugins:
-  - minify:
-      minify_html: true
   - rss:
       date_from_meta:
         as_creation: "date"
@@ -35,7 +33,7 @@ plugins:
   - search
 
 theme:
-  name: united
+  name: mkdocs
   language: en
 
 # Extensions to enhance markdown
@@ -44,10 +42,6 @@ markdown_extensions:
   - attr_list
   - codehilite
   - meta
-  - pymdownx.emoji
-  - pymdownx.snippets:
-      base_path: "."
-      check_paths: true
   - toc:
       permalink: "#"
 
