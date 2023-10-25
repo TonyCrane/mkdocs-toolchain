@@ -73,6 +73,13 @@ class GitRssPlugin(BasePlugin):
         # prepare output feeds
         self.feed_created = dict
         self.feed_updated = dict
+        self.enabled = True
+
+    def on_startup(self, command, dirty: bool) -> None:
+        if command == "serve":
+            self.enabled = False
+        else:
+            self.enabled = True
 
     def on_config(self, config: config_options.Config) -> dict:
         """The config event is the first event called on build and
@@ -90,6 +97,8 @@ class GitRssPlugin(BasePlugin):
         """
 
         # Skip if disabled
+        if not self.enabled:
+            return config
         if not self.config.get("enabled"):
             return config
 
@@ -215,6 +224,8 @@ class GitRssPlugin(BasePlugin):
         """
 
         # Skip if disabled
+        if not self.enabled:
+            return
         if not self.config.get("enabled"):
             return
 
@@ -293,6 +304,8 @@ class GitRssPlugin(BasePlugin):
         """
 
         # Skip if disabled
+        if not self.enabled:
+            return
         if not self.config.get("enabled"):
             return
 

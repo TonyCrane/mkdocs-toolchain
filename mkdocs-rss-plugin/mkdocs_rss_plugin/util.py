@@ -225,14 +225,14 @@ class Util:
                         format="%at",
                     )
             except GitCommandError as err:
-                logging.warning(
+                logger.warning(
                     f"[rss-plugin] Unable to read git logs of '{in_page.file.abs_src_path}'. "
                     "Is git log readable? Falling back to build date. "
                     "To disable this warning, set 'use_git: false' in plugin options. "
                     f"Trace: {err}"
                 )
             except GitCommandNotFound as err:
-                logging.error(
+                logger.error(
                     "[rss-plugin] Unable to perform command 'git log'. Is git installed? "
                     "Falling back to build date. "
                     "To disable this warning, set 'use_git: false' in plugin options. "
@@ -276,7 +276,7 @@ class Util:
                 dt_updated,
             )
         else:
-            logging.warning(
+            logger.warning(
                 f"[rss-plugin] Dates could not be retrieved for page: {in_page.file.abs_src_path}."
             )
             return (
@@ -301,7 +301,7 @@ class Util:
             elif isinstance(in_page.meta.get("author"), (list, tuple)):
                 return tuple(in_page.meta.get("author"))
             else:
-                logging.warning(
+                logger.warning(
                     "[rss-plugin] Type of author value in page.meta "
                     f"({in_page.file.abs_src_path}) is not valid. "
                     "It should be str, list or tuple, "
@@ -314,7 +314,7 @@ class Util:
             elif isinstance(in_page.meta.get("authors"), (list, tuple)):
                 return tuple(in_page.meta.get("authors"))
             else:
-                logging.warning(
+                logger.warning(
                     "[rss-plugin] Type of authors value in page.meta (%s) is not valid. "
                     "It should be str, list or tuple, not: %s."
                     % in_page.file.abs_src_path,
@@ -556,7 +556,7 @@ class Util:
             remote_img = request.urlopen(url=req, context=ssl_context)
             img_length = remote_img.getheader("content-length")
         except (HTTPError, URLError) as err:
-            logging.warning(
+            logger.warning(
                 f"[rss-plugin] Remote image could not been reached: {image_url}. "
                 f"Trying again with GET and disabling SSL verification. Attempt: {attempt}. "
                 f"Trace: {err}"
@@ -569,7 +569,7 @@ class Util:
                     ssl_context=ssl._create_unverified_context(),
                 )
             else:
-                logging.error(
+                logger.error(
                     f"[rss-plugin] Remote image is not reachable: {image_url} after "
                     f"{attempt} attempts. Trace: {err}"
                 )
