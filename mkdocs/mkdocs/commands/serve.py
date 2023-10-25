@@ -104,6 +104,7 @@ def serve(
         try:
             server.serve()
         except KeyboardInterrupt:
+            print()
             log.info("Shutting down...")
         finally:
             server.shutdown()

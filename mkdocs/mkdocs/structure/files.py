@@ -14,6 +14,7 @@ from urllib.parse import quote as urlquote
 import pathspec
 import pathspec.gitignore
 import pathspec.util
+from rich.progress import track
 
 from mkdocs import utils
 
@@ -108,7 +109,7 @@ class Files:
         inclusion: Callable[[InclusionLevel], bool] = InclusionLevel.is_included,
     ) -> None:
         """Copy static files from source to destination."""
-        for file in self:
+        for file in track(self, description="[green]Copying static files...", transient=True):
             if not file.is_documentation_page() and inclusion(file.inclusion):
                 file.copy_file(dirty)
 
