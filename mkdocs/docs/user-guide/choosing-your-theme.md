@@ -13,12 +13,12 @@ config file.
 
 ```yaml
 theme:
-    name: readthedocs
+  name: readthedocs
 ```
 
 ## mkdocs
 
-The default theme, which was built as a custom [Bootstrap] theme, supports most
+The default theme, which was built as a custom [Bootstrap] theme, supports almost
 every feature of MkDocs.
 
 ![mkdocs](../img/mkdocs.png)
@@ -36,12 +36,14 @@ supports the following options:
 *   __`hljs_languages`__: By default, highlight.js only supports 23 common
     languages. List additional languages here to include support for them.
 
-        theme:
-            name: mkdocs
-            highlightjs: true
-            hljs_languages:
-                - yaml
-                - rust
+    ```yaml
+    theme:
+      name: mkdocs
+      highlightjs: true
+      hljs_languages:
+        - yaml
+        - rust
+    ```
 
 *   __`analytics`__: Defines configuration options for an analytics service.
     Currently, only Google Analytics v4 is supported via the `gtag` option.
@@ -51,29 +53,33 @@ supports the following options:
     [Set up Analytics for a website and/or app (GA4)][setup-GA4] or to
     [Upgrade to a Google Analytics 4 property][upgrade-GA4].
 
-            theme:
-                name: mkdocs
-                analytics:
-                    gtag: G-ABC123
+        ```yaml
+        theme:
+          name: mkdocs
+          analytics:
+            gtag: G-ABC123
+        ```
 
         When set to the default (`null`) Google Analytics is disabled for the
         site.
 
 *   __`shortcuts`__: Defines keyboard shortcut keys.
 
-        theme:
-            name: mkdocs
-            shortcuts:
-                help: 191    # ?
-                next: 78     # n
-                previous: 80 # p
-                search: 83   # s
+    ```yaml
+    theme:
+      name: mkdocs
+      shortcuts:
+        help: 191    # ?
+        next: 78     # n
+        previous: 80 # p
+        search: 83   # s
+    ```
 
-    All values must be numeric key codes. It is best to use keys which are
+    All values must be numeric key codes. It is best to use keys that are
     available on all keyboards. You may use <https://keycode.info/> to determine
     the key code for a given key.
 
-    *   __`help`__: Display a help modal which lists the keyboard shortcuts.
+    *   __`help`__: Display a help modal that lists the keyboard shortcuts.
         Default: `191` (&quest;)
 
     *   __`next`__: Navigate to the "next" page. Default: `78` (n)
@@ -89,33 +95,27 @@ supports the following options:
     default, this is set to `primary` (the default), but it can also be set to
     `dark` or `light`.
 
-        theme:
-            name: mkdocs
-            nav_style: dark
+    ```yaml
+    theme:
+      name: mkdocs
+      nav_style: dark
+    ```
 
 *   __`locale`__{ #mkdocs-locale }: The locale (language/location) used to
-    build the theme. If your locale is not yet supported, it will fallback
+    build the theme. If your locale is not yet supported, it will fall back
     to the default.
 
     The following locales are supported by this theme:
 
     * `en`: English (default)
-    * `fr`: French
-    * `es`: Spanish
-    * `ja`: Japanese
-    * `pt_BR`: Portuguese (Brazil)
-    * `zh_CN`: Simplified Chinese
-    * `de`: German
-    * `fa`: Persian (Farsi)
-    * `it`: Italian
-    * `tr_TR`: Turkish (Turkey)
+    * (see the list of existing directories `mkdocs/themes/mkdocs/locales/*/`)
 
     See the guide on [localizing your theme] for more information.
 
 ## readthedocs
 
 A clone of the default theme used by the [Read the Docs] service, which offers
-the same restricted feature-set as its parent theme. Like its parent theme, only
+the same restricted feature set as its parent theme. Like its parent theme, only
 two levels of navigation are supported.
 
 ![ReadTheDocs](../img/readthedocs.png)
@@ -129,12 +129,14 @@ theme supports the following options:
 *   __`hljs_languages`__: By default, highlight.js only supports 23 common
     languages. List additional languages here to include support for them.
 
-        theme:
-            name: readthedocs
-            highlightjs: true
-            hljs_languages:
-                - yaml
-                - rust
+    ```yaml
+    theme:
+      name: readthedocs
+      highlightjs: true
+      hljs_languages:
+        - yaml
+        - rust
+    ```
 
 *   __`analytics`__: Defines configuration options for an analytics service.
 
@@ -143,10 +145,12 @@ theme supports the following options:
     [Set up Analytics for a website and/or app (GA4)][setup-GA4] or to
     [Upgrade to a Google Analytics 4 property][upgrade-GA4].
 
-            theme:
-                name: readthedocs
-                analytics:
-                    gtag: G-ABC123
+        ```yaml
+        theme:
+          name: readthedocs
+          analytics:
+            gtag: G-ABC123
+        ```
 
         When set to the default (`null`) Google Analytics is disabled for the
 
@@ -175,21 +179,13 @@ theme supports the following options:
     page content as you scroll the page. Default: `True`.
 
 *   __`locale`__{ #readthedocs-locale }: The locale (language/location) used to
-    build the theme. If your locale is not yet supported, it will fallback
+    build the theme. If your locale is not yet supported, it will fall back
     to the default.
 
     The following locales are supported by this theme:
 
     * `en`: English (default)
-    * `fr`: French
-    * `es`: Spanish
-    * `ja`: Japanese
-    * `pt_BR`: Portuguese (Brazil)
-    * `zh_CN`: Simplified Chinese
-    * `de`: German
-    * `fa`: Persian (Farsi)
-    * `it`: Italian
-    * `tr_TR`: Turkish (Turkey)
+    * (see the list of existing directories `mkdocs/themes/readthedocs/locales/*/`)
 
     See the guide on [localizing your theme] for more information.
 
@@ -198,8 +194,7 @@ theme supports the following options:
 
 ## Third Party Themes
 
-A list of third party themes can be found in the MkDocs [community wiki]. If you
-have created your own, please feel free to add it to the list.
+A list of third party themes can be found at the [community wiki] page and [the ranked catalog][catalog]. If you have created your own, please add them there.
 
 [third party themes]: #third-party-themes
 [theme]: configuration.md#theme
@@ -210,4 +205,5 @@ have created your own, please feel free to add it to the list.
 [upgrade-GA4]: https://support.google.com/analytics/answer/9744165?hl=en&ref_topic=9303319
 [Read the Docs]: https://readthedocs.org/
 [community wiki]: https://github.com/mkdocs/mkdocs/wiki/MkDocs-Themes
+[catalog]: https://github.com/mkdocs/catalog#-theming
 [localizing your theme]: localizing-your-theme.md

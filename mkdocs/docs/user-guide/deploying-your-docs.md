@@ -40,6 +40,10 @@ You should never edit files in your pages repository by hand if you're using
 the `gh-deploy` command because you will lose your work the next time you
 run the command.
 
+WARNING:
+If there are untracked files or uncommitted work in the local repository where
+`mkdocs gh-deploy` is run, these will be included in the pages that are deployed.
+
 ### Organization and User Pages
 
 User and Organization Pages sites are not tied to a specific project, and the
@@ -48,7 +52,7 @@ with the GitHub account name. Therefore, you need working copies of two
 repositories on our local system. For example, consider the following file
 structure:
 
-```no-highlight
+```text
 my-project/
     mkdocs.yml
     docs/
@@ -171,14 +175,18 @@ settings will need to be customized in very specific ways.
     The `site_url` must be set to an empty string, which instructs MkDocs to
     build your site so that it will work with the `file://` scheme.
 
-        site_url: ""
+    ```yaml
+    site_url: ""
+    ```
 
 -   [use_directory_urls]:
 
     Set `use_directory_urls` to `false`. Otherwise, internal links between
     pages will not work properly.
 
-        use_directory_urls: false
+    ```yaml
+    use_directory_urls: false
+    ```
 
 -   [search]:
 
@@ -186,7 +194,9 @@ settings will need to be customized in very specific ways.
     search plugin which is specifically designed to work with the `file://`
     scheme. To disable all plugins, set the `plugins` setting to an empty list.
 
-        plugins: []
+    ```yaml
+    plugins: []
+    ```
 
     If you have other plugins enabled, simply ensure that `search` is not
     included in the list.

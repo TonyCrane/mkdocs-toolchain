@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Sequence
 
-import jinja2
 from jinja2.ext import Extension, InternationalizationExtension
 
 from mkdocs.config.base import ValidationError
+
+if TYPE_CHECKING:
+    import jinja2
 
 try:
     from babel.core import Locale, UnknownLocaleError
@@ -37,7 +39,7 @@ def parse_locale(locale: str) -> Locale:
     try:
         return Locale.parse(locale, sep='_')
     except (ValueError, UnknownLocaleError, TypeError) as e:
-        raise ValidationError(f'Invalid value for locale: {str(e)}')
+        raise ValidationError(f'Invalid value for locale: {e}')
 
 
 def install_translations(
@@ -63,8 +65,8 @@ def install_translations(
 
 def _get_merged_translations(
     theme_dirs: Sequence[str], locales_dir: str, locale: Locale
-) -> Translations:
-    merged_translations: Optional[Translations] = None
+) -> Translations | None:
+    merged_translations: Translations | None = None
 
     log.debug(f"Looking for translations for locale '{locale}'")
     if locale.territory:

@@ -38,7 +38,6 @@ def testing_server(root, builder=lambda: None, mount_path="/"):
             root=root,
             mount_path=mount_path,
             polling_interval=0.2,
-            bind_and_activate=False,
         )
         server.setup_environ()
     server.observer.start()
@@ -158,27 +157,29 @@ class BuildTests(unittest.TestCase):
 
                 self.assertTrue(started_building.wait(timeout=10))
 
-    @tempdir({"foo.docs": "a"})
-    @tempdir({"foo.site": "original"})
-    def test_custom_action_warns(self, site_dir, docs_dir):
+    @tempdir()
+    def test_unwatch(self, site_dir):
         started_building = threading.Event()
 
-        def rebuild():
-            started_building.set()
-            content = Path(docs_dir, "foo.docs").read_text()
-            Path(site_dir, "foo.site").write_text(content * 5)
+        with testing_server(site_dir, started_building.set) as server:
+            with self.assertRaises(KeyError):
+                server.unwatch(site_dir)
 
-        with testing_server(site_dir) as server:
-            with self.assertWarnsRegex(DeprecationWarning, "func") as cm:
-                server.watch(docs_dir, rebuild)
-                time.sleep(0.01)
-            self.assertIn("livereload_tests.py", cm.filename)
+            server.watch(site_dir)
+            server.watch(site_dir)
+            server.unwatch(site_dir)
+            time.sleep(0.01)
 
-            Path(docs_dir, "foo.docs").write_text("b")
+            Path(site_dir, "foo").write_text("foo")
             self.assertTrue(started_building.wait(timeout=10))
+            started_building.clear()
 
-            _, output = do_request(server, "GET /foo.site")
-            self.assertEqual(output, "bbbbb")
+            server.unwatch(site_dir)
+            Path(site_dir, "foo").write_text("bar")
+            self.assertFalse(started_building.wait(timeout=0.5))
+
+            with self.assertRaises(KeyError):
+                server.unwatch(site_dir)
 
     @tempdir({"foo.docs": "docs1"})
     @tempdir({"foo.extra": "extra1"})
@@ -264,6 +265,44 @@ class BuildTests(unittest.TestCase):
             _, output = do_request(server, "GET /foo.site")
             self.assertEqual(output, "ccccc")
 
+    @tempdir({"foo.docs": "a"})
+    @tempdir({"foo.site": "original"})
+    def test_recovers_from_build_error(self, site_dir, docs_dir):
+        started_building = threading.Event()
+        build_count = 0
+
+        def rebuild():
+            started_building.set()
+            nonlocal build_count
+            build_count += 1
+            if build_count == 1:
+                raise ValueError("oh no")
+            else:
+                content = Path(docs_dir, "foo.docs").read_text()
+                Path(site_dir, "foo.site").write_text(content * 5)
+
+        with testing_server(site_dir, rebuild) as server:
+            server.watch(docs_dir)
+            time.sleep(0.01)
+
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), self.assertLogs("mkdocs.livereload") as cm:
+                Path(docs_dir, "foo.docs").write_text("b")
+                started_building.wait(timeout=10)
+
+                Path(docs_dir, "foo.docs").write_text("c")
+
+                _, output = do_request(server, "GET /foo.site")
+
+            self.assertIn("ValueError: oh no", err.getvalue())
+            self.assertRegex(
+                "\n".join(cm.output),
+                r".*Detected file changes\n"
+                r".*An error happened during the rebuild.*\n"
+                r".*Detected file changes\n",
+            )
+            self.assertEqual(output, "ccccc")
+
     @tempdir(
         {
             "normal.html": "<html><body>hello</body></html>",
@@ -301,20 +340,35 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(headers.get("content-length"), str(len(output)))
 
             for path in "/foo/", "/foo/index.html":
-                _, output = do_request(server, "GET /foo/")
+                _, output = do_request(server, f"GET {path}")
                 self.assertRegex(output, r"^<body>bbb</body>$")
 
             with self.assertLogs("mkdocs.livereload"):
                 headers, _ = do_request(server, "GET /foo/index.html/")
             self.assertEqual(headers["_status"], "404 Not Found")
 
-    @tempdir({"foo/bar/index.html": "<body>aaa</body>"})
+    @tempdir(
+        {
+            "foo/bar/index.html": "<body>aaa</body>",
+            "foo/測試/index.html": "<body>bbb</body>",
+        }
+    )
     def test_redirects_to_directory(self, site_dir):
         with testing_server(site_dir, mount_path="/sub") as server:
             with self.assertLogs("mkdocs.livereload"):
                 headers, _ = do_request(server, "GET /sub/foo/bar")
             self.assertEqual(headers["_status"], "302 Found")
             self.assertEqual(headers.get("location"), "/sub/foo/bar/")
+
+            with self.assertLogs("mkdocs.livereload"):
+                headers, _ = do_request(server, "GET /sub/foo/測試")
+            self.assertEqual(headers["_status"], "302 Found")
+            self.assertEqual(headers.get("location"), "/sub/foo/%E6%B8%AC%E8%A9%A6/")
+
+            with self.assertLogs("mkdocs.livereload"):
+                headers, _ = do_request(server, "GET /sub/foo/%E6%B8%AC%E8%A9%A6")
+            self.assertEqual(headers["_status"], "302 Found")
+            self.assertEqual(headers.get("location"), "/sub/foo/%E6%B8%AC%E8%A9%A6/")
 
     @tempdir({"я.html": "<body>aaa</body>", "测试2/index.html": "<body>bbb</body>"})
     def test_serves_with_unicode_characters(self, site_dir):
@@ -388,7 +442,6 @@ class BuildTests(unittest.TestCase):
 
     @tempdir()
     def test_bad_error_handler(self, site_dir):
-        self.maxDiff = None
         with testing_server(site_dir) as server:
             server.error_handler = lambda code: 0 / 0
             with self.assertLogs("mkdocs.livereload") as cm:
@@ -447,6 +500,14 @@ class BuildTests(unittest.TestCase):
                 headers, _ = do_request(server, "GET /")
             self.assertEqual(headers["_status"], "302 Found")
             self.assertEqual(headers.get("location"), "/mount/path/")
+
+    @tempdir()
+    def test_redirects_to_unicode_mount_path(self, site_dir):
+        with testing_server(site_dir, mount_path="/mount/測試") as server:
+            with self.assertLogs("mkdocs.livereload"):
+                headers, _ = do_request(server, "GET /")
+            self.assertEqual(headers["_status"], "302 Found")
+            self.assertEqual(headers.get("location"), "/mount/%E6%B8%AC%E8%A9%A6/")
 
     @tempdir({"mkdocs.yml": "original", "mkdocs2.yml": "original"}, prefix="tmp_dir")
     @tempdir(prefix="origin_dir")

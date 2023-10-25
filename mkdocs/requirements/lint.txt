@@ -1,9 +1,0 @@
-black
-isort
-flake8
-mypy
-types-setuptools
-types-PyYAML
-types-Markdown
-types-Jinja2
-codespell

@@ -1,5 +1,5 @@
 """
-# MkDocs Integration tests
+# MkDocs Integration tests.
 
 This is a simple integration test that builds the MkDocs
 documentation against all of the builtin themes.
@@ -18,16 +18,15 @@ TODOs
 import logging
 import os
 import subprocess
+import tempfile
 
 import click
-
-from mkdocs import utils
 
 log = logging.getLogger('mkdocs')
 
 DIR = os.path.dirname(__file__)
 MKDOCS_CONFIG = os.path.abspath(os.path.join(DIR, '../../mkdocs.yml'))
-MKDOCS_THEMES = utils.get_theme_names()
+MKDOCS_THEMES = ['mkdocs', 'readthedocs']
 TEST_PROJECTS = os.path.abspath(os.path.join(DIR, 'integration'))
 
 
@@ -36,9 +35,12 @@ TEST_PROJECTS = os.path.abspath(os.path.join(DIR, 'integration'))
     '--output',
     help="The output directory to use when building themes",
     type=click.Path(file_okay=False, writable=True),
-    required=True,
 )
 def main(output=None):
+    if output is None:
+        directory = tempfile.TemporaryDirectory(prefix='mkdocs_integration-')
+        output = directory.name
+
     log.propagate = False
     stream = logging.StreamHandler()
     formatter = logging.Formatter("\033[1m\033[1;32m *** %(message)s *** \033[0m")
@@ -46,22 +48,24 @@ def main(output=None):
     log.addHandler(stream)
     log.setLevel(logging.DEBUG)
 
-    base_cmd = ['mkdocs', 'build', '-s', '--site-dir']
+    base_cmd = ['mkdocs', 'build', '-q', '-s', '--site-dir']
 
     log.debug("Building installed themes.")
     for theme in sorted(MKDOCS_THEMES):
         log.debug(f"Building theme: {theme}")
         project_dir = os.path.dirname(MKDOCS_CONFIG)
         out = os.path.join(output, theme)
-        command = base_cmd + [out, '--theme', theme]
+        command = [*base_cmd, out, '--theme', theme]
         subprocess.check_call(command, cwd=project_dir)
 
     log.debug("Building test projects.")
     for project in os.listdir(TEST_PROJECTS):
-        log.debug(f"Building test project: {project}")
         project_dir = os.path.join(TEST_PROJECTS, project)
+        if not os.path.isdir(project_dir):
+            continue
+        log.debug(f"Building test project: {project}")
         out = os.path.join(output, project)
-        command = base_cmd + [out]
+        command = [*base_cmd, out]
         subprocess.check_call(command, cwd=project_dir)
 
     log.debug(f"Theme and integration builds are in {output}")

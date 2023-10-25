@@ -5,13 +5,12 @@ import unittest
 
 import mkdocs
 from mkdocs import config
-from mkdocs.config import config_options, defaults
+from mkdocs.config import config_options as c
+from mkdocs.config import defaults
 from mkdocs.config.base import ValidationError
 from mkdocs.exceptions import ConfigurationError
 from mkdocs.localization import parse_locale
 from mkdocs.tests.base import dedent, tempdir
-
-DEFAULT_SCHEMA = defaults.get_schema()
 
 
 class ConfigTests(unittest.TestCase):
@@ -20,17 +19,13 @@ class ConfigTests(unittest.TestCase):
             config.load_config(config_file='bad_filename.yaml')
 
     def test_missing_site_name(self):
-        c = config.Config(schema=DEFAULT_SCHEMA)
-        c.load_dict({})
-        errors, warnings = c.validate()
+        conf = defaults.MkDocsConfig()
+        conf.load_dict({})
+        errors, warnings = conf.validate()
         self.assertEqual(
             errors, [('site_name', ValidationError("Required configuration not provided."))]
         )
         self.assertEqual(warnings, [])
-
-    def test_empty_config(self):
-        with self.assertRaises(ConfigurationError):
-            config.load_config(config_file='/dev/null')
 
     def test_nonexistant_config(self):
         with self.assertRaises(ConfigurationError):
@@ -82,7 +77,7 @@ class ConfigTests(unittest.TestCase):
     @tempdir()
     def test_theme(self, mytheme, custom):
         configs = [
-            dict(),  # default theme
+            {},  # default theme
             {"theme": "readthedocs"},  # builtin theme
             {"theme": {'name': 'readthedocs'}},  # builtin as complex
             {"theme": {'name': None, 'custom_dir': mytheme}},  # custom only as complex
@@ -109,6 +104,7 @@ class ConfigTests(unittest.TestCase):
                 'dirs': [os.path.join(theme_dir, 'mkdocs'), mkdocs_templates_dir],
                 'static_templates': ['404.html', 'sitemap.xml'],
                 'vars': {
+                    'name': 'mkdocs',
                     'locale': parse_locale('en'),
                     'include_search_page': False,
                     'search_index_only': False,
@@ -125,12 +121,14 @@ class ConfigTests(unittest.TestCase):
                 'dirs': [os.path.join(theme_dir, 'readthedocs'), mkdocs_templates_dir],
                 'static_templates': ['404.html', 'sitemap.xml'],
                 'vars': {
+                    'name': 'readthedocs',
                     'locale': parse_locale('en'),
                     'include_search_page': True,
                     'search_index_only': False,
                     'analytics': {'anonymize_ip': False, 'gtag': None},
                     'highlightjs': True,
                     'hljs_languages': [],
+                    'hljs_style': 'github',
                     'include_homepage_in_sidebar': True,
                     'prev_next_buttons_location': 'bottom',
                     'navigation_depth': 4,
@@ -144,12 +142,14 @@ class ConfigTests(unittest.TestCase):
                 'dirs': [os.path.join(theme_dir, 'readthedocs'), mkdocs_templates_dir],
                 'static_templates': ['404.html', 'sitemap.xml'],
                 'vars': {
+                    'name': 'readthedocs',
                     'locale': parse_locale('en'),
                     'include_search_page': True,
                     'search_index_only': False,
                     'analytics': {'anonymize_ip': False, 'gtag': None},
                     'highlightjs': True,
                     'hljs_languages': [],
+                    'hljs_style': 'github',
                     'include_homepage_in_sidebar': True,
                     'prev_next_buttons_location': 'bottom',
                     'navigation_depth': 4,
@@ -162,18 +162,20 @@ class ConfigTests(unittest.TestCase):
             {
                 'dirs': [mytheme, mkdocs_templates_dir],
                 'static_templates': ['sitemap.xml'],
-                'vars': {'locale': parse_locale('en')},
+                'vars': {'name': None, 'locale': parse_locale('en')},
             },
             {
                 'dirs': [custom, os.path.join(theme_dir, 'readthedocs'), mkdocs_templates_dir],
                 'static_templates': ['404.html', 'sitemap.xml'],
                 'vars': {
+                    'name': 'readthedocs',
                     'locale': parse_locale('en'),
                     'include_search_page': True,
                     'search_index_only': False,
                     'analytics': {'anonymize_ip': False, 'gtag': None},
                     'highlightjs': True,
                     'hljs_languages': [],
+                    'hljs_style': 'github',
                     'include_homepage_in_sidebar': True,
                     'prev_next_buttons_location': 'bottom',
                     'navigation_depth': 4,
@@ -187,6 +189,7 @@ class ConfigTests(unittest.TestCase):
                 'dirs': [os.path.join(theme_dir, 'mkdocs'), mkdocs_templates_dir],
                 'static_templates': ['404.html', 'sitemap.xml', 'foo.html'],
                 'vars': {
+                    'name': 'mkdocs',
                     'locale': parse_locale('fr'),
                     'show_sidebar': False,
                     'some_var': 'bar',
@@ -205,28 +208,25 @@ class ConfigTests(unittest.TestCase):
 
         for config_contents, result in zip(configs, results):
             with self.subTest(config_contents):
-                c = config.Config(schema=(('theme', config_options.Theme(default='mkdocs')),))
-                c.load_dict(config_contents)
-                errors, warnings = c.validate()
+                conf = config.Config(schema=(('theme', c.Theme(default='mkdocs')),))
+                conf.load_dict(config_contents)
+                errors, warnings = conf.validate()
                 self.assertEqual(errors, [])
                 self.assertEqual(warnings, [])
-                self.assertEqual(c['theme'].dirs, result['dirs'])
-                self.assertEqual(c['theme'].static_templates, set(result['static_templates']))
-                self.assertEqual({k: c['theme'][k] for k in iter(c['theme'])}, result['vars'])
+                self.assertEqual(conf['theme'].dirs, result['dirs'])
+                self.assertEqual(conf['theme'].static_templates, set(result['static_templates']))
+                self.assertEqual(dict(conf['theme']), result['vars'])
 
     def test_empty_nav(self):
-        conf = config.Config(schema=DEFAULT_SCHEMA)
-        conf.load_dict(
-            {
-                'site_name': 'Example',
-                'config_file_path': os.path.join(os.path.abspath('.'), 'mkdocs.yml'),
-            }
+        conf = defaults.MkDocsConfig(
+            config_file_path=os.path.join(os.path.abspath('.'), 'mkdocs.yml')
         )
+        conf.load_dict({'site_name': 'Example'})
         conf.validate()
         self.assertEqual(conf['nav'], None)
 
     def test_error_on_pages(self):
-        conf = config.Config(schema=DEFAULT_SCHEMA)
+        conf = defaults.MkDocsConfig()
         conf.load_dict(
             {
                 'site_name': 'Example',
@@ -239,10 +239,8 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(warnings, [])
 
     def test_doc_dir_in_site_dir(self):
-        j = os.path.join
-
         test_configs = (
-            {'docs_dir': j('site', 'docs'), 'site_dir': 'site'},
+            {'docs_dir': os.path.join('site', 'docs'), 'site_dir': 'site'},
             {'docs_dir': 'docs', 'site_dir': '.'},
             {'docs_dir': '.', 'site_dir': '.'},
             {'docs_dir': 'docs', 'site_dir': ''},
@@ -250,26 +248,19 @@ class ConfigTests(unittest.TestCase):
             {'docs_dir': 'docs', 'site_dir': 'docs'},
         )
 
-        conf = {
-            'config_file_path': j(os.path.abspath('..'), 'mkdocs.yml'),
-        }
-
         for test_config in test_configs:
             with self.subTest(test_config):
-                patch = conf.copy()
-                patch.update(test_config)
-
                 # Same as the default schema, but don't verify the docs_dir exists.
-                c = config.Config(
+                conf = config.Config(
                     schema=(
-                        ('docs_dir', config_options.Dir(default='docs')),
-                        ('site_dir', config_options.SiteDir(default='site')),
-                        ('config_file_path', config_options.Type(str)),
-                    )
+                        ('docs_dir', c.Dir(default='docs')),
+                        ('site_dir', c.SiteDir(default='site')),
+                    ),
+                    config_file_path=os.path.join(os.path.abspath('..'), 'mkdocs.yml'),
                 )
-                c.load_dict(patch)
+                conf.load_dict(test_config)
 
-                errors, warnings = c.validate()
+                errors, warnings = conf.validate()
 
                 self.assertEqual(len(errors), 1)
                 self.assertEqual(warnings, [])

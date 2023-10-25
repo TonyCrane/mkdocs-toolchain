@@ -13,11 +13,6 @@ mkdocs_templates_dir = os.path.join(mkdocs_dir, 'templates')
 theme_dir = os.path.abspath(os.path.join(mkdocs_dir, 'themes'))
 
 
-def get_vars(theme):
-    """Return dict of theme vars."""
-    return {k: theme[k] for k in iter(theme)}
-
-
 class ThemeTests(unittest.TestCase):
     def test_simple_theme(self):
         theme = Theme(name='mkdocs')
@@ -27,8 +22,9 @@ class ThemeTests(unittest.TestCase):
         )
         self.assertEqual(theme.static_templates, {'404.html', 'sitemap.xml'})
         self.assertEqual(
-            get_vars(theme),
+            dict(theme),
             {
+                'name': 'mkdocs',
                 'locale': parse_locale('en'),
                 'include_search_page': False,
                 'search_index_only': False,
@@ -80,7 +76,7 @@ class ThemeTests(unittest.TestCase):
         self.assertTrue('new' in theme)
         self.assertEqual(theme['new'], 42)
 
-    @mock.patch('mkdocs.utils.yaml_load', return_value=None)
+    @mock.patch('mkdocs.utils.yaml_load', return_value={})
     def test_no_theme_config(self, m):
         theme = Theme(name='mkdocs')
         self.assertEqual(m.call_count, 1)

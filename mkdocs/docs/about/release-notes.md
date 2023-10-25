@@ -6,12 +6,16 @@
 
 To upgrade MkDocs to the latest version, use pip:
 
-    pip install -U mkdocs
+```bash
+pip install -U mkdocs
+```
 
 You can determine your currently installed version using `mkdocs --version`:
 
-    $ mkdocs --version
-    mkdocs, version 1.0 from /path/to/mkdocs (Python 3.6)
+```console
+$ mkdocs --version
+mkdocs, version 1.5.0 from /path/to/mkdocs (Python 3.10)
+```
 
 ## Maintenance team
 
@@ -22,6 +26,571 @@ The current and past members of the MkDocs team.
 * [@waylan](https://github.com/waylan/)
 * [@oprypin](https://github.com/oprypin/)
 * [@ultrabug](https://github.com/ultrabug/)
+
+## Version 1.5.3 (2023-09-18)
+
+*   Fix `mkdocs serve` sometimes locking up all browser tabs when navigating quickly (#3390)
+
+*   Add many new supported languages for "search" plugin - update lunr-languages to 1.12.0 (#3334)
+
+*   Bugfix (regression in 1.5.0): In "readthedocs" theme the styling of "breadcrumb navigation" was broken for nested pages (#3383)
+
+*   Built-in themes now also support Chinese (Traditional, Taiwan) language (#3154)
+
+*   Plugins can now set `File.page` to their own subclass of `Page`. There is also now a warning if `File.page` is set to anything other than a strict subclass of `Page`. (#3367, #3381)
+
+    Note that just instantiating a `Page` [sets the file automatically](https://github.com/mkdocs/mkdocs/blob/f94ab3f62d0416d484d81a0c695c8ca86ab3b975/mkdocs/structure/pages.py#L34), so care needs to be taken not to create an unneeded `Page`.
+
+Other small improvements; see [commit log](https://github.com/mkdocs/mkdocs/compare/1.5.2...1.5.3).
+
+## Version 1.5.2 (2023-08-02)
+
+*   Bugfix (regression in 1.5.0): Restore functionality of `--no-livereload`. (#3320)
+
+*   Bugfix (regression in 1.5.0): The new page title detection would sometimes be unable to drop anchorlinks - fix that. (#3325)
+
+*   Partly bring back pre-1.5 API: `extra_javascript` items will once again be mostly strings, and only sometimes `ExtraScriptValue` (when the extra `script` functionality is used).
+
+    Plugins should be free to append strings to `config.extra_javascript`, but when reading the values, they must still make sure to read it as `str(value)` in case it is an `ExtraScriptValue` item. For querying the attributes such as `.type` you need to check `isinstance` first. Static type checking will guide you in that. (#3324)
+
+See [commit log](https://github.com/mkdocs/mkdocs/compare/1.5.1...1.5.2).
+
+## Version 1.5.1 (2023-07-28)
+
+*   Bugfix (regression in 1.5.0): Make it possible to treat `ExtraScriptValue` as a path. This lets some plugins still work despite the breaking change.
+
+*   Bugfix (regression in 1.5.0): Prevent errors for special setups that have 3 conflicting files, such as `index.html`, `index.md` *and* `README.md` (#3314)
+
+See [commit log](https://github.com/mkdocs/mkdocs/compare/1.5.0...1.5.1).
+
+## Version 1.5.0 (2023-07-26)
+
+### New command `mkdocs get-deps`
+
+This command guesses the Python dependencies that a MkDocs site requires in order to build. It simply prints the PyPI packages that need to be installed. In the terminal it can be combined directly with an installation command as follows:
+
+```bash
+pip install $(mkdocs get-deps)
+```
+
+The idea is that right after running this command, you can directly follow it up with `mkdocs build` and it will almost always "just work", without needing to think which dependencies to install.
+
+The way it works is by scanning `mkdocs.yml` for `themes:`, `plugins:`, `markdown_extensions:` items and doing a reverse lookup based on a large list of known projects (catalog, see below).
+
+Of course, you're welcome to use a "virtualenv" with such a command. Also note that for environments that require stability (for example CI) directly installing deps in this way is not a very reliable approach as it precludes dependency pinning.
+
+The command allows overriding which config file is used (instead of `mkdocs.yml` in the current directory) as well as which catalog of projects is used (instead of downloading it from the default location). See [`mkdocs get-deps --help`](../user-guide/cli.md#mkdocs-get-deps).
+
+Context: #3205
+
+### MkDocs has an official catalog of plugins
+
+Check out <https://github.com/mkdocs/catalog> and add all your general-purpose plugins, themes and extensions there, so that they can be looked up through `mkdocs get-deps`.
+
+This was renamed from "best-of-mkdocs" and received significant updates. In addition to `pip` installation commands, the page now shows the config boilerplate needed to add a plugin.
+
+### Expanded validation of links
+
+#### Validated links in Markdown
+
+> As you may know, within Markdown, MkDocs really only recognizes **relative** links that lead to another physical `*.md` document (or media file). This is a good convention to follow because then the source pages are also freely browsable without MkDocs, for example on GitHub. MkDocs knows that in the output it should turn those `*.md` links into `*.html` as appropriate, and it would also always tell you if such a link doesn't actually lead to an existing file.
+
+However, the checks for links were really loose and had many concessions. For example, links that started with `/` ("absolute") and links that *ended* with `/` were left as is and no warning was shown, which allowed such very fragile links to sneak into site sources: links that happen to work right now but get no validation and links that confusingly need an extra level of `..` with `use_directory_urls` enabled.
+
+Now, in addition to validating relative links, MkDocs will print `INFO` messages for unrecognized types of links (including absolute links). They look like this:
+
+```text
+INFO - Doc file 'example.md' contains an absolute link '/foo/bar/', it was left as is. Did you mean 'foo/bar.md'?
+```
+
+If you don't want any changes, not even the `INFO` messages, and wish to revert to the silence from MkDocs 1.4, add the following configs to `mkdocs.yml` (**not** recommended):
+
+```yaml
+validation:
+  absolute_links: ignore
+  unrecognized_links: ignore
+```
+
+If, on the opposite end, you want these to print `WARNING` messages and cause `mkdocs build --strict` to fail, you are recommended to configure these to `warn` instead.
+
+See [**documentation**](../user-guide/configuration.md#validation) for actual recommended settings and more details. Context: #3283
+
+#### Validated links in the nav
+
+Links to documents in the [`nav` configuration](../user-guide/configuration.md#nav) now also have configurable validation, though with no changes to the defaults.
+
+You are welcomed to turn on validation for files that were forgotten and excluded from the nav. Example:
+
+```yaml
+validation:
+  nav:
+    omitted_files: warn
+    absolute_links: warn
+```
+
+This can make the following message appear with the `WARNING` level (as opposed to `INFO` as the only option previously), thus being caught by `mkdocs --strict`:
+
+```text
+INFO - The following pages exist in the docs directory, but are not included in the "nav" configuration: ...
+```
+
+See [**documentation**](../user-guide/configuration.md#validation). Context: #3283, #1755
+
+#### Mark docs as intentionally "not in nav"
+
+There is a new config `not_in_nav`. With it, you can mark particular patterns of files as exempt from the above `omitted_files` warning type; no messages will be printed for them anymore. (As a corollary, setting this config to `*` is the same as ignoring `omitted_files` altogether.)
+
+This is useful if you generally like these warnings about files that were forgotten from the nav, but still have some pages that you knowingly excluded from the nav and just want to build and copy them.
+
+The `not_in_nav` config is a set of gitignore-like patterns. See the next section for an explanation of another such config.
+
+See [**documentation**](../user-guide/configuration.md#not_in_nav). Context: #3224, #1888
+
+### Excluded doc files
+
+There is a new config `exclude_docs` that tells MkDocs to ignore certain files under `docs_dir` and *not* copy them to the built `site` as part of the build.
+
+Historically MkDocs would always ignore file names starting with a dot, and that's all. Now this is all configurable: you can un-ignore these and/or ignore more patterns of files.
+
+The `exclude_docs` config follows the [.gitignore pattern format](https://git-scm.com/docs/gitignore#_pattern_format) and is specified as a multiline YAML string. For example:
+
+```yaml
+exclude_docs: |
+  *.py               # Excludes e.g. docs/hooks/foo.py
+  /drafts            # Excludes e.g. docs/drafts/hello.md
+  /requirements.txt  # Excludes docs/requirements.txt
+```
+
+Validation of links (described above) is also affected by `exclude_docs`. During `mkdocs serve` the messages explain the interaction, whereas during `mkdocs build` excluded files are as good as nonexistent.
+
+As an additional related change, if you have a need to have both `README.md` and `index.md` files in a directory but publish only one of them, you can now use this feature to explicitly ignore one of them and avoid warnings.
+
+See [**documentation**](../user-guide/configuration.md#exclude_docs). Context: #3224
+
+#### Drafts
+
+The `exclude_docs` config has another behavior: all excluded Markdown pages will still be previewable in `mkdocs serve` only, just with a "DRAFT" marker on top. Then they will of course be excluded from `mkdocs build` or `gh-deploy`.
+
+If you don't want `mkdocs serve` to have any special behaviors and instead want it to perform completely normal builds, use the new flag `mkdocs serve --clean`.
+
+See [**documentation**](../user-guide/configuration.md#exclude_docs). Context: #3224
+
+### `mkdocs serve` no longer exits after build errors
+
+If there was an error (from the config or a plugin) during a site re-build, `mkdocs serve` used to exit after printing a stack trace. Now it will simply freeze the server until the author edits the files to fix the problem, and then will keep reloading.
+
+But errors on the *first* build still cause `mkdocs serve` to exit, as before.
+
+Context: #3255
+
+### Page titles will be deduced from any style of heading
+
+MkDocs always had the ability to infer the title of a page (if it's not specified in the `nav`) based on the first line of the document, if it had a `<h1>` heading that had to written starting with the exact character `#`. Now any style of Markdown heading is understood (#1886). Due to the previous simplistic parsing, it was also impossible to use `attr_list` attributes in that first heading (#3136). Now that is also fixed.
+
+### Markdown extensions can use paths relative to the current document
+
+This is aimed at extensions such as `pymdownx.snippets` or `markdown_include.include`: you can now specify their include paths to be relative to the currently rendered Markdown document, or relative to the `docs_dir`. Any other extension can of course also make use of the new `!relative` YAML tag.
+
+```yaml
+markdown_extensions:
+  - pymdownx.snippets:
+      base_path: !relative
+```
+
+See [**documentation**](../user-guide/configuration.md#paths-relative-to-the-current-file-or-site). Context: #2154, #3258
+
+### `<script>` tags can specify `type="module"` and other attributes
+
+In `extra_javascript`, if you use the `.mjs` file extension or explicitly specify a `type: module` key, the script will be added with the `type="module"` attribute. `defer: true` and `async: true` keys are also available.
+
+See [updated **documentation** for `extra_javascript`](../user-guide/configuration.md#extra_javascript).
+
+**At first this is only supported in built-in themes, other themes need to follow up, see below.**
+
+Context: #3237
+
+### Changes for theme developers (action required!)
+
+Using the construct `{% for script in extra_javascript %}` is now fully obsolete because it cannot allow customizing the attributes of the `<script>` tag. It will keep working but blocks some of MkDocs' features.
+
+Instead, you now need to use `config.extra_javascript` (which was already the case for a while) and couple it with the new `script_tag` filter:
+
+```django
+    {%- for script in config.extra_javascript %}
+      {{ script | script_tag }}
+    {%- endfor %}
+```
+
+See [**documentation**](../dev-guide/themes.md#picking-up-css-and-javascript-from-the-config).
+
+### Upgrades for plugin developers
+
+*   Breaking change: `config.extra_javascript` is no longer a plain list of strings, but instead a list of `ExtraScriptValue` items. So you can no longer treat the list values as strings. If you want to keep compatibility with old versions, just always reference the items as `str(item)` instead. And you can still append plain strings to the list if you wish. See information about `<script>` tags above. Context: #3237
+
+*   `File` has a new attribute `inclusion`. Its value is calculated from both the `exclude_docs` and `not_in_nav` configs, and implements their behavior. Plugins can read this value or write to it. New `File` instances by default follow whatever the configs say, but plugins can choose to make this decision explicitly, per file.
+
+*   When creating a `File`, one can now set a `dest_uri` directly, rather than having to update it (and other dependent attributes) after creation. [Context](https://github.com/mkdocs/mkdocs/commit/d5af6426c52421f1113f6dcc591de1e01bea48bd)
+
+*   A new config option was added - `DictOfItems`. Similarly to `ListOfItems`, it validates a mapping of config options that all have the same type. Keys are arbitrary but always strings. Context: #3242
+
+*   A new function `get_plugin_logger` was added. In order to opt into a standardized way for plugins to log messages, please use the idiom:
+
+    ```python
+    log = mkdocs.plugins.get_plugin_logger(__name__)
+    ...
+    log.info("Hello, world")
+    ```
+
+    Context: #3245
+
+*   `SubConfig` config option can be conveniently subclassed with a particular type of config specified. For example, `class ExtraScript(SubConfig[ExtraScriptValue]):`. To see how this is useful, search for this class in code. [Context](https://github.com/mkdocs/mkdocs/commit/73e503990e3e3504bfe1cb627d41a7e97970687e)
+
+*   Bugfix: `SubConfig` had a bug where paths (from `FilesystemObject` options) were not made relative to the main config file as intended, because `config_file_path` was not properly inherited to it. This is now fixed. Context: #3265
+
+*   `Config` members now have a way to avoid clashing with Python's reserved words. This is achieved by stripping a trailing underscore from each member's name.
+
+    Example of adding an `async` boolean option that can be set by the user as `async: true` and read programmatically as `config.async_`:
+
+    ```python
+    class ExampleConfig(Config):
+        async_ = Type(bool, default=False)
+    ```
+
+    Previously making a config key with a reserved name was impossible with new-style schemas. [Context](https://github.com/mkdocs/mkdocs/commit/1db8e884fa7135a49adf7740add5d875a16a18bc)
+
+*   `Theme` has its attributes properly declared and gained new attributes `theme.locale`, `theme.custom_dir`.
+
+*   Some type annotations were made more precise. For example:
+
+    * The `context` parameter has gained the type `TemplateContext` (`TypedDict`). [Context](https://github.com/mkdocs/mkdocs/commit/0f793b9984c7e6a1d53ce874e7d17b6d27ebf4b2)
+    * The classes `Page`, `Section`, `Link` now have a common base class `StructureItem`. [Context](https://github.com/mkdocs/mkdocs/commit/01be507e30b05db0a4c44ef05ba62b2098010653)
+    * Some methods stopped accepting `Config` and only accept `MkDocsConfig` as was originally intended. [Context](https://github.com/mkdocs/mkdocs/commit/c459cd24fc0320333f51525e9cf681d4a8370f50)
+    * `config.mdx_configs` got a proper type. Context: #3229
+
+### Theme updates
+
+*   Built-in themes mostly stopped relying on `<script defer>`. This may affect some usages of `extra_javascript`, mainly remove the need for custom handling of "has the page fully loaded yet". Context: #3237
+
+*   "mkdocs" theme now has a styling for `>` blockquotes, previously they were not distinguished at all. Context: #3291
+
+*   "readthedocs" theme was updated to v1.2.0 according to upstream, with improved styles for `<kbd>` and breadcrumb navigation. Context: #3058
+
+*   Both built-in themes had their version of highlight.js updated to 11.8.0, and jQuery updated to 3.6.0.
+
+### Bug fixes
+
+#### Relative paths in the nav can traverse above the root
+
+Regression in 1.2 - relative paths in the nav could no longer traverse above the site's root and were truncated to the root. Although such traversal is discouraged and produces a warning, this was a documented behavior. The behavior is now restored.
+
+Context: #2752, #3010
+
+#### MkDocs can accept the config from stdin
+
+This can be used for config overrides on the fly. See updated section at the bottom of [Configuration Inheritance](../user-guide/configuration.md#configuration-inheritance).
+
+The command to use this is `mkdocs build -f -`. In previous versions doing this led to an error.
+
+[Context](https://github.com/mkdocs/mkdocs/commit/d5bb15fa108da86a8e53fb7d84109d8f8d9d6453)
+
+### New command line flags
+
+* `mkdocs --no-color build` disables color output and line wrapping. This option is also available through an environment variable `NO_COLOR=true`. Context: #3282
+* `mkdocs build --no-strict` overrides the `strict` config to `false`. Context: #3254
+* `mkdocs build -f -` (described directly above).
+* `mkdocs serve --clean` (described above).
+* `mkdocs serve --dirty` is the new name of `mkdocs serve --dirtyreload`.
+
+### Deprecations
+
+*   `extra_javascript` underwent a change that can break plugins in rare cases, and it requires attention from theme developers. See respective entries above.
+
+*   Python-Markdown was unpinned from `<3.4`. That version is known to remove functionality. If you are affected by those removals, you can still choose to pin the version for yourself: `Markdown <3.4`. Context: #3222, #2892
+
+*   `mkdocs.utils.warning_filter` now shows a warning about being deprecated. It does nothing since MkDocs 1.2. Consider `get_plugin_logger` or just logging under `mkdocs.plugins.*` instead. Context: #3008
+
+*   Accessing the `_vars` attribute of a `Theme` is deprecated - just access the keys directly.
+
+*   Accessing the `user_configs` attribute of a `Config` is deprecated. Note: instead of `config.user_configs[*]['theme']['custom_dir']`, please use the new attribute `config.theme.custom_dir`.
+
+Other small improvements; see [commit log](https://github.com/mkdocs/mkdocs/compare/1.4.3...1.5.0).
+
+## Version 1.4.3 (2023-05-02)
+
+*   Bugfix: for the `hooks` feature, modules no longer fail to load if using some advanced Python features like dataclasses (#3193)
+
+*   Bugfix: Don't create `None` sitemap entries if the page has no populated URL - affects sites that exclude some files from navigation ([`07a297b`](https://github.com/mkdocs/mkdocs/commit/07a297b3b4de4a1b49469b1497ee34039b9f38fa))
+
+*   "readthedocs" theme:
+    * Accessibility: add aria labels to Home logo (#3129) and search inputs (#3046)
+    * "readthedocs" theme now supports `hljs_style:` config, same as "mkdocs" theme (#3199)
+
+*   Translations:
+    * Built-in themes now also support Indonesian language (#3154)
+    * Fixed `zh_CN` translation (#3125)
+    * `tr_TR` translation becomes just `tr` - usage should remain unaffected (#3195)
+
+See [commit log](https://github.com/mkdocs/mkdocs/compare/1.4.2...1.4.3).
+
+## Version 1.4.2 (2022-11-01)
+
+*   Officially support Python 3.11 (#3020)
+
+    NEW: **Tip:** Simply upgrading to Python 3.11 can cut off 10-15% of your site's build time.
+
+*   Support multiple instances of the same plugin (#3027)
+
+    If a plugin is specified multiple times in the list under the `plugins:` config, that will create 2 (or more) instances of the plugin with their own config each.
+
+    Previously this case was unforeseen and, as such, bugged.
+
+    Now even though this works, by default a warning will appear from MkDocs anyway, unless the plugin adds a class variable `supports_multiple_instances = True`.
+
+*   Bugfix (regression in 1.4.1): Don't error when a plugin puts a plain string into `warnings` (#3016)
+
+*   Bugfix: Relative links will always render with a trailing slash (#3022)
+
+    Previously under `use_directory_urls`, links *from* a sub-page *to* the main index page rendered as e.g. `<a href="../..">` even though in all other cases the links look like `<a href="../../">`. This caused unwanted behavior on some combinations of Web browsers and servers. Now this special-case bug was removed.
+
+*   Built-in "mkdocs" theme now also supports Norwegian language (#3024)
+
+*   Plugin-related warnings look more readable (#3016)
+
+See [commit log](https://github.com/mkdocs/mkdocs/compare/1.4.1...1.4.2).
+
+## Version 1.4.1 (2022-10-15)
+
+*   Support theme-namespaced plugin loading (#2998)
+
+    Plugins' entry points can be named as 'sometheme/someplugin'. That will have the following outcome:
+
+    * If the current theme is 'sometheme', the plugin 'sometheme/someplugin' will always be preferred over 'someplugin'.
+    * If the current theme *isn't* 'sometheme', the only way to use this plugin is by specifying `plugins: [sometheme/someplugin]`.
+
+    One can also specify `plugins: ['/someplugin']` instead of `plugins: ['someplugin']` to definitely avoid the theme-namespaced plugin.
+
+*   Bugfix: `mkdocs serve` will work correctly with non-ASCII paths and redirects (#3001)
+
+*   Windows: 'colorama' is now a dependency of MkDocs, to ensure colorful log output (#2987)
+
+*   Plugin-related config options have more reliable validation and error reporting (#2997)
+
+*   Translation sub-commands of `setup.py` were completely dropped. See documentation [[1]](../about/contributing.md#submitting-changes-to-the-builtin-themes) [[2]](../dev-guide/translations.md#updating-the-translation-catalogs) for their new replacements (#2990)
+
+*   The ['mkdocs' package](https://pypi.org/project/mkdocs/#files) (wheel and source) is now produced by Hatch build system and pyproject.toml instead of setup.py (#2988)
+
+Other small improvements; see [commit log](https://github.com/mkdocs/mkdocs/compare/1.4.0...1.4.1).
+
+## Version 1.4.0 (2022-09-27)
+
+### Feature upgrades
+
+#### Hooks (#2978)
+
+The new `hooks:` config allows you to add plugin-like event handlers from local Python files, without needing to set up and install an actual plugin.
+
+See [**documentation**](../user-guide/configuration.md#hooks).
+
+#### `edit_uri` flexibility (#2927)
+
+There is a new `edit_uri_template:` config.  
+It works like `edit_uri` but more generally covers ways to construct an edit URL.  
+See [**documentation**](../user-guide/configuration.md#edit_uri_template).
+
+Additionally, the `edit_uri` functionality will now fully work even if `repo_url` is omitted (#2928)
+
+### Upgrades for plugin developers
+
+NOTE: This release has big changes to the implementation of plugins and their configs. But, the intention is to have zero breaking changes in all reasonably common use cases. Or at the very least if a code fix is required, there should always be a way to stay compatible with older MkDocs versions. Please report if this release breaks something.
+
+#### Customize event order for plugin event handlers (#2973)
+
+Plugins can now choose to set a priority value for their event handlers. This can override the old behavior where for each event type, the handlers are called in the order that their plugins appear in the [`plugins` config](../user-guide/configuration.md#plugins).
+
+If this is set, events with higher priority are called first. Events without a chosen priority get a default of 0. Events that have the same priority are ordered as they appear in the config.
+
+Recommended priority values: `100` "first", `50` "early", `0` "default", `-50` "late", `-100` "last".  
+As different plugins discover more precise relations to each other, the values should be further tweaked.
+
+See [**documentation**](../dev-guide/plugins.md#event-priorities).
+
+#### New events that persist across builds in `mkdocs serve` (#2972)
+
+The new events are `on_startup` and `on_shutdown`. They run at the very beginning and very end of an `mkdocs` invocation.  
+`on_startup` also receives information on how `mkdocs` was invoked (e.g. `serve` `--dirtyreload`).
+
+See [**documentation**](../dev-guide/plugins.md#events).
+
+#### Replace `File.src_path` to not deal with backslashes (#2930)
+
+The property `src_path` uses backslashes on Windows, which doesn't make sense as it's a virtual path.  
+To not make a breaking change, there's no change to how *this* property is used, but now you should:
+
+* Use **`File.src_uri`** instead of `File.src_path`
+* and **`File.dest_uri`** instead of `File.dest_path`.
+
+These consistently use forward slashes, and are now the definitive source that MkDocs itself uses.
+
+See [source code](https://github.com/mkdocs/mkdocs/blob/1.4.0/mkdocs/structure/files.py#L151).
+
+As a related tip: you should also stop using `os.path.*` or `pathlib.Path()` to deal with these paths, and instead use `posixpath.*` or `pathlib.PurePosixPath()`
+
+#### MkDocs is type-annotated, ready for use with [mypy](https://mypy.readthedocs.io/) (#2941, #2970)
+
+##### Type annotations for event handler methods (#2931)
+
+MkDocs' plugin event methods now have type annotations. You might have been adding annotations to events already, but now they will be validated to match the original.
+
+See [source code](https://github.com/mkdocs/mkdocs/blob/1.4.0/mkdocs/plugins.py#L165) and [documentation](../dev-guide/plugins.md#events).
+
+One big update is that now you should annotate method parameters more specifically as `config: defaults.MkDocsConfig` instead of `config: base.Config`. This not only makes it clear that it is the [main config of MkDocs itself](https://github.com/mkdocs/mkdocs/blob/1.4.0/mkdocs/config/defaults.py), but also provides type-safe access through attributes of the object (see next section).
+
+See [source code](https://github.com/mkdocs/mkdocs/blob/1.4.0/mkdocs/config/defaults.py) and [documentation](../dev-guide/plugins.md#on_event_name).
+
+#### Rework ConfigOption schemas as class-based (#2962)
+
+When developing a plugin, the settings that it accepts used to be specified in the `config_scheme` variable on the plugin class.  
+This approach is now soft-deprecated, and instead you should specify the config in a sub-class of `base.Config`.
+
+Old example:
+
+```python
+from mkdocs import plugins
+from mkdocs.config import base, config_options
+
+class MyPlugin(plugins.BasePlugin):
+    config_scheme = (
+        ('foo', config_options.Type(int)),
+        ('bar', config_options.Type(str, default='')),
+    )
+
+    def on_page_markdown(self, markdown: str, *, config: base.Config, **kwargs):
+        if self.config['foo'] < 5:
+            if config['site_url'].startswith('http:'):
+                return markdown + self.config['baz']
+```
+
+This code snippet actually has many mistakes but it will pass all type checks and silently run and even succeed in some cases.
+
+So, on to the new equivalent example, changed to new-style schema and attribute-based access:  
+(Complaints from "mypy" added inline)
+
+```python
+from mkdocs import plugins
+from mkdocs.config import base, config_options as c
+
+class MyPluginConfig(base.Config):
+    foo = c.Optional(c.Type(int))
+    bar = c.Type(str, default='')
+
+class MyPlugin(plugins.BasePlugin[MyPluginConfig]):
+    def on_page_markdown(self, markdown: str, *, config: defaults.MkDocsConfig, **kwargs):
+        if self.config.foo < 5:  # Error, `foo` might be `None`, need to check first.
+            if config.site_url.startswith('http:'):  # Error, MkDocs' `site_url` also might be `None`.
+                return markdown + self.config.baz  # Error, no such attribute `baz`!
+```
+
+This lets you notice the errors from a static type checker before running the code and fix them as such:
+
+```python
+class MyPlugin(plugins.BasePlugin[MyPluginConfig]):
+    def on_page_markdown(self, markdown: str, *, config: defaults.MkDocsConfig, **kwargs):
+        if self.config.foo is not None and self.config.foo < 5:  # OK, `int < int` is valid.
+            if (config.site_url or '').startswith('http:'):  # OK, `str.startswith(str)` is valid.
+                return markdown + self.config.bar  # OK, `str + str` is valid.
+```
+
+See [**documentation**](../dev-guide/plugins.md#config_scheme).
+
+Also notice that we had to explicitly mark the config attribute `foo` as `Optional`.  
+The new-style config has all attributes marked as required by default, and specifying `required=False` or `required=True` is not allowed!
+
+##### New: `config_options.Optional` (#2962)
+
+Wrapping something into `Optional` is conceptually similar to "I want the default to be `None`" -- and you *have* to express it like that, because writing `default=None` doesn't actually work.
+
+Breaking change: the method `BaseConfigOption.is_required()` was removed. Use `.required` instead. (#2938)  
+And even the `required` property should be mostly unused now.  
+For class-based configs, there's a new definition for whether an option is "required":
+
+* It has no default, and
+* It is not wrapped into `config_options.Optional`.
+
+##### New: `config_options.ListOfItems` (#2938)
+
+Defines a list of items that each must adhere to the same constraint. Kind of like a validated `Type(list)`
+
+Examples how to express a list of integers (with `from mkdocs.config import config_options as c`):
+
+Description | Code entry
+----------- | ----------
+Required to specify | `foo = c.ListOfItems(c.Type(int))`
+Optional, default is [] | `foo = c.ListOfItems(c.Type(int), default=[])`
+Optional, default is None | `foo = c.Optional(c.ListOfItems(c.Type(int)))`
+
+See more [examples in **documentation**](../dev-guide/plugins.md#examples-of-config-definitions).
+
+##### Updated: `config_options.SubConfig` (#2807)
+
+`SubConfig` used to silently ignore all validation of its config options. Now you should pass `validate=True` to it or just use new class-based configs where this became the default.
+
+So, it can be used to validate a nested sub-dict with all keys pre-defined and value types strictly validated.
+
+See [examples in **documentation**](../dev-guide/plugins.md#examples-of-config-definitions).
+
+#### Other changes to config options
+
+`URL`'s default is now `None` instead of `''`. This can still be checked for truthiness in the same way - `if config.some_url:` (#2962)
+
+`FilesystemObject` is no longer abstract and can be used directly, standing for "file or directory" with optional existence checking (#2938)
+
+Bug fixes:
+
+* Fix `SubConfig`, `ConfigItems`, `MarkdownExtensions` to not leak values across different instances (#2916, #2290)
+* `SubConfig` raises the correct kind of validation error without a stack trace (#2938)
+* Fix dot-separated redirect in `config_options.Deprecated(moved_to)` (#2963)
+
+Tweaked logic for handling `ConfigOption.default` (#2938)
+
+Deprecated config option classes: `ConfigItems` (#2983), `OptionallyRequired` (#2962), `RepoURL` (#2927)
+
+### Theme updates
+
+*   Styles of admonitions in "MkDocs" theme (#2981):
+    * Update colors to increase contrast
+    * Apply admonition styles also to `<details>` tag, to support Markdown extensions that provide it ([pymdownx.details](https://facelessuser.github.io/pymdown-extensions/extensions/details/), [callouts](https://oprypin.github.io/markdown-callouts/#collapsible-blocks))
+
+*   Built-in themes now also support these languages:
+    * Russian (#2976)
+    * Turkish (Turkey) (#2946)
+    * Ukrainian (#2980)
+
+### Future compatibility
+
+*   `extra_css:` and `extra_javascript:` warn if a backslash `\` is passed to them. (#2930, #2984)
+
+*   Show `DeprecationWarning`s as INFO messages. (#2907)
+
+    If any plugin or extension that you use relies on deprecated functionality of other libraries, it is at risk of breaking in the near future. Plugin developers should address these in a timely manner.
+
+*   Avoid a dependency on `importlib_metadata` starting from Python 3.10 (#2959)
+
+*   Drop support for Python 3.6 (#2948)
+
+#### Incompatible changes to public APIs
+
+*   `mkdocs.utils`:
+    * `create_media_urls` and `normalize_url` warn if a backslash `\` is passed to them. (#2930)
+    * `is_markdown_file` stops accepting case-insensitive variants such as `.MD`, which is how MkDocs build was already operating. (#2912)
+    * Hard-deprecated: `modified_time`, `reduce_list`, `get_html_path`, `get_url_path`, `is_html_file`, `is_template_file`. (#2912)
+
+### Miscellaneous
+
+*   If a plugin adds paths to `watch` in `LiveReloadServer`, it can now `unwatch` them. (#2777)
+
+*   Bugfix (regression in 1.2): Support listening on an IPv6 address in `mkdocs serve`. (#2951)
+
+Other small improvements; see [commit log](https://github.com/mkdocs/mkdocs/compare/1.3.1...1.4.0).
 
 ## Version 1.3.1 (2022-07-19)
 
@@ -560,16 +1129,16 @@ configuration looked like this:
 
 ```yaml
 pages:
-    - Home: index.md
-    - User Guide: user-guide.md
+  - Home: index.md
+  - User Guide: user-guide.md
 ```
 
 Simply edit the configuration as follows:
 
 ```yaml
 nav:
-    - Home: index.md
-    - User Guide: user-guide.md
+  - Home: index.md
+  - User Guide: user-guide.md
 ```
 
 In the current release, any configuration which includes a `pages` setting, but
@@ -607,7 +1176,7 @@ corresponding configuration values (`config.extra_javascript` and
 `config.extra_css` respectively) should be used with the filter instead.
 
 ```django
-{% for path in config['extra_css'] %}
+{% for path in config.extra_css %}
     <link href="{{ path|url }}" rel="stylesheet">
 {% endfor %}
 ```
@@ -806,8 +1375,8 @@ Then the configuration should be adjusted as follows:
 
 ```yaml
 theme:
-    name: mkdocs
-    custom_dir: custom
+  name: mkdocs
+  custom_dir: custom
 ```
 
 See the [theme] configuration option documentation for details.
@@ -990,7 +1559,7 @@ work for version 0.16, but may be removed in a future version. Use
 `config.var_name` instead, where `var_name` is the name of one of the
 [configuration] variables.
 
-[configuration]: /user-guide/configuration.md
+[configuration]: ../user-guide/configuration.md
 
 Below is a summary of all of the changes made to the global context:
 
@@ -1261,7 +1830,7 @@ a small subset of the configuration options can be passed to the commands. To
 see in full commands and available arguments use `mkdocs --help` and
 `mkdocs build --help` to have them displayed.
 
-[Click]: http://click.pocoo.org/4/
+[Click]: https://click.palletsprojects.com/
 
 #### Support Extra HTML and XML files
 

@@ -6,10 +6,11 @@ import os
 import re
 import subprocess
 from html.parser import HTMLParser
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING
 
-from mkdocs.structure.pages import Page
-from mkdocs.structure.toc import AnchorLink, TableOfContents
+if TYPE_CHECKING:
+    from mkdocs.structure.pages import Page
+    from mkdocs.structure.toc import AnchorLink, TableOfContents
 
 try:
     from lunr import lunr
@@ -28,10 +29,10 @@ class SearchIndex:
     """
 
     def __init__(self, **config) -> None:
-        self._entries: List[dict] = []
+        self._entries: list[dict] = []
         self.config = config
 
-    def _find_toc_by_id(self, toc, id_: Optional[str]) -> Optional[AnchorLink]:
+    def _find_toc_by_id(self, toc, id_: str | None) -> AnchorLink | None:
         """
         Given a table of contents and HTML ID, iterate through
         and return the matched item in the TOC.
@@ -44,10 +45,8 @@ class SearchIndex:
                 return toc_item_r
         return None
 
-    def _add_entry(self, title: Optional[str], text: str, loc: str) -> None:
-        """
-        A simple wrapper to add an entry, dropping bad characters.
-        """
+    def _add_entry(self, title: str | None, text: str, loc: str) -> None:
+        """A simple wrapper to add an entry, dropping bad characters."""
         text = text.replace('\u00a0', ' ')
         text = re.sub(r'[ \t\n\r\f\v]+', ' ', text.strip())
 
@@ -85,7 +84,7 @@ class SearchIndex:
         """
         Given a section on the page, the table of contents and
         the absolute url for the page create an entry in the
-        index
+        index.
         """
         toc_item = self._find_toc_by_id(toc, section.id)
 
@@ -94,7 +93,7 @@ class SearchIndex:
             self._add_entry(title=toc_item.title, text=text, loc=abs_url + toc_item.url)
 
     def generate_search_index(self) -> str:
-        """python to json conversion"""
+        """Python to json conversion."""
         page_dicts = {'docs': self._entries, 'config': self.config}
         data = json.dumps(page_dicts, sort_keys=True, separators=(',', ':'), default=str)
 
@@ -143,14 +142,14 @@ class SearchIndex:
 class ContentSection:
     """
     Used by the ContentParser class to capture the information we
-    need when it is parsing the HMTL.
+    need when it is parsing the HTML.
     """
 
     def __init__(
         self,
-        text: Optional[List[str]] = None,
-        id_: Optional[str] = None,
-        title: Optional[str] = None,
+        text: list[str] | None = None,
+        id_: str | None = None,
+        title: str | None = None,
     ) -> None:
         self.text = text or []
         self.id = id_
@@ -173,14 +172,13 @@ class ContentParser(HTMLParser):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.data: List[ContentSection] = []
-        self.section: Optional[ContentSection] = None
+        self.data: list[ContentSection] = []
+        self.section: ContentSection | None = None
         self.is_header_tag = False
-        self._stripped_html: List[str] = []
+        self._stripped_html: list[str] = []
 
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """Called at the start of every HTML tag."""
-
         # We only care about the opening tag for headings.
         if tag not in _HEADER_TAGS:
             return
@@ -197,7 +195,6 @@ class ContentParser(HTMLParser):
 
     def handle_endtag(self, tag: str) -> None:
         """Called at the end of every HTML tag."""
-
         # We only care about the opening tag for headings.
         if tag not in _HEADER_TAGS:
             return
@@ -205,9 +202,7 @@ class ContentParser(HTMLParser):
         self.is_header_tag = False
 
     def handle_data(self, data: str) -> None:
-        """
-        Called for the text contents of each tag.
-        """
+        """Called for the text contents of each tag."""
         self._stripped_html.append(data)
 
         if self.section is None:

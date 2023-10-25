@@ -70,7 +70,7 @@ class SearchConfigTests(unittest.TestCase):
 
     def test_lang_missing_and_with_territory(self):
         option = search.LangOption()
-        value = option.validate(['zh_CN', 'pt_BR', 'fr'])
+        value = option.validate(['cs_CZ', 'pt_BR', 'fr'])
         self.assertEqual(['fr', 'en', 'pt'], value)
 
 
@@ -168,7 +168,7 @@ class SearchPluginTests(unittest.TestCase):
         self.assertEqual(result['theme'].static_templates, {'404.html', 'sitemap.xml'})
         self.assertEqual(len(result['theme'].dirs), 3)
         self.assertEqual(result['extra_javascript'], ['search/main.js'])
-        self.assertEqual(plugin.config['lang'], [result['theme']['locale'].language])
+        self.assertEqual(plugin.config.lang, [result['theme']['locale'].language])
 
     def test_event_on_config_lang(self):
         plugin = search.SearchPlugin()
@@ -179,7 +179,7 @@ class SearchPluginTests(unittest.TestCase):
         self.assertEqual(result['theme'].static_templates, {'404.html', 'sitemap.xml'})
         self.assertEqual(len(result['theme'].dirs), 3)
         self.assertEqual(result['extra_javascript'], ['search/main.js'])
-        self.assertEqual(plugin.config['lang'], ['es'])
+        self.assertEqual(plugin.config.lang, ['es'])
 
     def test_event_on_config_theme_locale(self):
         plugin = search.SearchPlugin()
@@ -192,7 +192,7 @@ class SearchPluginTests(unittest.TestCase):
         self.assertEqual(result['theme'].static_templates, {'404.html', 'sitemap.xml'})
         self.assertEqual(len(result['theme'].dirs), 3)
         self.assertEqual(result['extra_javascript'], ['search/main.js'])
-        self.assertEqual(plugin.config['lang'], [result['theme']['locale'].language])
+        self.assertEqual(plugin.config.lang, [result['theme']['locale'].language])
 
     def test_event_on_config_include_search_page(self):
         plugin = search.SearchPlugin()
@@ -314,9 +314,7 @@ class SearchIndexTests(unittest.TestCase):
         self.assertEqual(parser.data, [])
 
     def test_find_toc_by_id(self):
-        """
-        Test finding the relevant TOC item by the tag ID.
-        """
+        """Test finding the relevant TOC item by the tag ID."""
         index = search_index.SearchIndex()
 
         md = dedent(
@@ -354,22 +352,12 @@ class SearchIndexTests(unittest.TestCase):
         pages = [
             Page(
                 'Home',
-                File(
-                    'index.md',
-                    base_cfg['docs_dir'],
-                    base_cfg['site_dir'],
-                    base_cfg['use_directory_urls'],
-                ),
+                File('index.md', base_cfg.docs_dir, base_cfg.site_dir, base_cfg.use_directory_urls),
                 base_cfg,
             ),
             Page(
                 'About',
-                File(
-                    'about.md',
-                    base_cfg['docs_dir'],
-                    base_cfg['site_dir'],
-                    base_cfg['use_directory_urls'],
-                ),
+                File('about.md', base_cfg.docs_dir, base_cfg.site_dir, base_cfg.use_directory_urls),
                 base_cfg,
             ),
         ]
@@ -421,9 +409,7 @@ class SearchIndexTests(unittest.TestCase):
         def test_page(title, filename, config):
             test_page = Page(
                 title,
-                File(
-                    filename, config['docs_dir'], config['site_dir'], config['use_directory_urls']
-                ),
+                File(filename, config.docs_dir, config.site_dir, config.use_directory_urls),
                 config,
             )
             test_page.content = """
@@ -478,8 +464,8 @@ class SearchIndexTests(unittest.TestCase):
                 self.assertEqual(errors, [])
                 self.assertEqual(warnings, [])
 
-                base_cfg = load_config()
-                base_cfg['plugins']['search'].config['indexing'] = option
+                base_cfg = load_config(plugins=['search'])
+                base_cfg.plugins['search'].config.indexing = option
 
                 pages = [
                     test_page('Home', 'index.md', base_cfg),

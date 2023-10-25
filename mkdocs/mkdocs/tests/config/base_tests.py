@@ -2,22 +2,23 @@ import os
 import unittest
 
 from mkdocs import exceptions
-from mkdocs.config import base, config_options, defaults
+from mkdocs.config import base
+from mkdocs.config import config_options as c
+from mkdocs.config import defaults
 from mkdocs.config.base import ValidationError
-from mkdocs.config.config_options import BaseConfigOption
 from mkdocs.tests.base import change_dir, tempdir
 
 
 class ConfigBaseTests(unittest.TestCase):
     def test_unrecognised_keys(self):
-        c = base.Config(schema=defaults.get_schema())
-        c.load_dict(
+        conf = defaults.MkDocsConfig()
+        conf.load_dict(
             {
                 'not_a_valid_config_option': "test",
             }
         )
 
-        failed, warnings = c.validate()
+        failed, warnings = conf.validate()
 
         self.assertEqual(
             warnings,
@@ -30,9 +31,9 @@ class ConfigBaseTests(unittest.TestCase):
         )
 
     def test_missing_required(self):
-        c = base.Config(schema=defaults.get_schema())
+        conf = defaults.MkDocsConfig()
 
-        errors, warnings = c.validate()
+        errors, warnings = conf.validate()
 
         self.assertEqual(
             errors, [('site_name', ValidationError('Required configuration not provided.'))]
@@ -50,40 +51,34 @@ class ConfigBaseTests(unittest.TestCase):
         os.mkdir(os.path.join(temp_dir, 'docs'))
 
         cfg = base.load_config(config_file=config_file.name)
-        self.assertTrue(isinstance(cfg, base.Config))
-        self.assertEqual(cfg['site_name'], 'MkDocs Test')
+        self.assertTrue(isinstance(cfg, defaults.MkDocsConfig))
+        self.assertEqual(cfg.site_name, 'MkDocs Test')
 
     @tempdir()
     def test_load_default_file(self, temp_dir):
-        """
-        test that `mkdocs.yml` will be loaded when '--config' is not set.
-        """
+        """Test that `mkdocs.yml` will be loaded when '--config' is not set."""
         with open(os.path.join(temp_dir, 'mkdocs.yml'), 'w') as config_file:
             config_file.write("site_name: MkDocs Test\n")
         os.mkdir(os.path.join(temp_dir, 'docs'))
         with change_dir(temp_dir):
             cfg = base.load_config(config_file=None)
-            self.assertTrue(isinstance(cfg, base.Config))
-            self.assertEqual(cfg['site_name'], 'MkDocs Test')
+            self.assertTrue(isinstance(cfg, defaults.MkDocsConfig))
+            self.assertEqual(cfg.site_name, 'MkDocs Test')
 
     @tempdir
     def test_load_default_file_with_yaml(self, temp_dir):
-        """
-        test that `mkdocs.yml` will be loaded when '--config' is not set.
-        """
+        """Test that `mkdocs.yml` will be loaded when '--config' is not set."""
         with open(os.path.join(temp_dir, 'mkdocs.yaml'), 'w') as config_file:
             config_file.write("site_name: MkDocs Test\n")
         os.mkdir(os.path.join(temp_dir, 'docs'))
         with change_dir(temp_dir):
             cfg = base.load_config(config_file=None)
-            self.assertTrue(isinstance(cfg, base.Config))
-            self.assertEqual(cfg['site_name'], 'MkDocs Test')
+            self.assertTrue(isinstance(cfg, defaults.MkDocsConfig))
+            self.assertEqual(cfg.site_name, 'MkDocs Test')
 
     @tempdir()
     def test_load_default_file_prefer_yml(self, temp_dir):
-        """
-        test that `mkdocs.yml` will be loaded when '--config' is not set.
-        """
+        """Test that `mkdocs.yml` will be loaded when '--config' is not set."""
         with open(os.path.join(temp_dir, 'mkdocs.yml'), 'w') as config_file1:
             config_file1.write("site_name: MkDocs Test1\n")
         with open(os.path.join(temp_dir, 'mkdocs.yaml'), 'w') as config_file2:
@@ -92,8 +87,8 @@ class ConfigBaseTests(unittest.TestCase):
         os.mkdir(os.path.join(temp_dir, 'docs'))
         with change_dir(temp_dir):
             cfg = base.load_config(config_file=None)
-            self.assertTrue(isinstance(cfg, base.Config))
-            self.assertEqual(cfg['site_name'], 'MkDocs Test1')
+            self.assertTrue(isinstance(cfg, defaults.MkDocsConfig))
+            self.assertEqual(cfg.site_name, 'MkDocs Test1')
 
     def test_load_from_missing_file(self):
         with self.assertRaisesRegex(
@@ -103,9 +98,7 @@ class ConfigBaseTests(unittest.TestCase):
 
     @tempdir()
     def test_load_from_open_file(self, temp_path):
-        """
-        `load_config` can accept an open file descriptor.
-        """
+        """`load_config` can accept an open file descriptor."""
         config_fname = os.path.join(temp_path, 'mkdocs.yml')
         config_file = open(config_fname, 'w+')
         config_file.write("site_name: MkDocs Test\n")
@@ -113,8 +106,8 @@ class ConfigBaseTests(unittest.TestCase):
         os.mkdir(os.path.join(temp_path, 'docs'))
 
         cfg = base.load_config(config_file=config_file)
-        self.assertTrue(isinstance(cfg, base.Config))
-        self.assertEqual(cfg['site_name'], 'MkDocs Test')
+        self.assertTrue(isinstance(cfg, defaults.MkDocsConfig))
+        self.assertEqual(cfg.site_name, 'MkDocs Test')
         # load_config will always close the file
         self.assertTrue(config_file.closed)
 
@@ -129,14 +122,12 @@ class ConfigBaseTests(unittest.TestCase):
         os.mkdir(os.path.join(temp_dir, 'docs'))
 
         cfg = base.load_config(config_file=config_file)
-        self.assertTrue(isinstance(cfg, base.Config))
-        self.assertEqual(cfg['site_name'], 'MkDocs Test')
+        self.assertTrue(isinstance(cfg, defaults.MkDocsConfig))
+        self.assertEqual(cfg.site_name, 'MkDocs Test')
 
     @tempdir
     def test_load_missing_required(self, temp_dir):
-        """
-        `site_name` is a required setting.
-        """
+        """`site_name` is a required setting."""
         with open(os.path.join(temp_dir, 'mkdocs.yml'), 'w') as config_file:
             config_file.write("site_dir: output\nsite_url: https://www.mkdocs.org\n")
         os.mkdir(os.path.join(temp_dir, 'docs'))
@@ -146,41 +137,41 @@ class ConfigBaseTests(unittest.TestCase):
                 base.load_config(config_file=config_file.name)
         self.assertEqual(
             '\n'.join(cm.output),
-            "ERROR:mkdocs.config:Config value: 'site_name'. Error: Required configuration not provided.",
+            "ERROR:mkdocs.config:Config value 'site_name': Required configuration not provided.",
         )
 
     def test_pre_validation_error(self):
-        class InvalidConfigOption(BaseConfigOption):
+        class InvalidConfigOption(c.BaseConfigOption):
             def pre_validation(self, config, key_name):
                 raise ValidationError('pre_validation error')
 
-        c = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
+        conf = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
 
-        errors, warnings = c.validate()
+        errors, warnings = conf.validate()
 
         self.assertEqual(errors, [('invalid_option', ValidationError('pre_validation error'))])
         self.assertEqual(warnings, [])
 
     def test_run_validation_error(self):
-        class InvalidConfigOption(BaseConfigOption):
+        class InvalidConfigOption(c.BaseConfigOption):
             def run_validation(self, value):
                 raise ValidationError('run_validation error')
 
-        c = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
+        conf = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
 
-        errors, warnings = c.validate()
+        errors, warnings = conf.validate()
 
         self.assertEqual(errors, [('invalid_option', ValidationError('run_validation error'))])
         self.assertEqual(warnings, [])
 
     def test_post_validation_error(self):
-        class InvalidConfigOption(BaseConfigOption):
+        class InvalidConfigOption(c.BaseConfigOption):
             def post_validation(self, config, key_name):
                 raise ValidationError('post_validation error')
 
-        c = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
+        conf = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
 
-        errors, warnings = c.validate()
+        errors, warnings = conf.validate()
 
         self.assertEqual(errors, [('invalid_option', ValidationError('post_validation error'))])
         self.assertEqual(warnings, [])
@@ -188,16 +179,16 @@ class ConfigBaseTests(unittest.TestCase):
     def test_pre_and_run_validation_errors(self):
         """A pre_validation error does not stop run_validation from running."""
 
-        class InvalidConfigOption(BaseConfigOption):
+        class InvalidConfigOption(c.BaseConfigOption):
             def pre_validation(self, config, key_name):
                 raise ValidationError('pre_validation error')
 
             def run_validation(self, value):
                 raise ValidationError('run_validation error')
 
-        c = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
+        conf = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
 
-        errors, warnings = c.validate()
+        errors, warnings = conf.validate()
 
         self.assertEqual(
             errors,
@@ -205,28 +196,28 @@ class ConfigBaseTests(unittest.TestCase):
                 ('invalid_option', ValidationError('pre_validation error')),
                 ('invalid_option', ValidationError('run_validation error')),
             ],
-        ),
+        )
         self.assertEqual(warnings, [])
 
     def test_run_and_post_validation_errors(self):
         """A run_validation error stops post_validation from running."""
 
-        class InvalidConfigOption(BaseConfigOption):
+        class InvalidConfigOption(c.BaseConfigOption):
             def run_validation(self, value):
                 raise ValidationError('run_validation error')
 
             def post_validation(self, config, key_name):
                 raise ValidationError('post_validation error')
 
-        c = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
+        conf = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
 
-        errors, warnings = c.validate()
+        errors, warnings = conf.validate()
 
         self.assertEqual(errors, [('invalid_option', ValidationError('run_validation error'))])
         self.assertEqual(warnings, [])
 
     def test_validation_warnings(self):
-        class InvalidConfigOption(BaseConfigOption):
+        class InvalidConfigOption(c.BaseConfigOption):
             def pre_validation(self, config, key_name):
                 self.warnings.append('pre_validation warning')
 
@@ -236,9 +227,9 @@ class ConfigBaseTests(unittest.TestCase):
             def post_validation(self, config, key_name):
                 self.warnings.append('post_validation warning')
 
-        c = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
+        conf = base.Config(schema=(('invalid_option', InvalidConfigOption()),))
 
-        errors, warnings = c.validate()
+        errors, warnings = conf.validate()
 
         self.assertEqual(errors, [])
         self.assertEqual(
@@ -263,16 +254,16 @@ class ConfigBaseTests(unittest.TestCase):
         os.mkdir(docs_dir)
 
         cfg = base.load_config(config_file=config_file)
-        self.assertTrue(isinstance(cfg, base.Config))
-        self.assertEqual(cfg['site_name'], 'MkDocs Test')
-        self.assertEqual(cfg['docs_dir'], docs_dir)
+        self.assertTrue(isinstance(cfg, defaults.MkDocsConfig))
+        self.assertEqual(cfg.site_name, 'MkDocs Test')
+        self.assertEqual(cfg.docs_dir, docs_dir)
         self.assertEqual(cfg.config_file_path, config_fname)
         self.assertIsInstance(cfg.config_file_path, str)
 
     def test_get_schema(self):
         class FooConfig:
-            z = config_options.URL()
-            aa = config_options.Type(int)
+            z = c.URL()
+            aa = c.Type(int)
 
         self.assertEqual(
             base.get_schema(FooConfig),

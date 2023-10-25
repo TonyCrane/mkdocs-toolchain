@@ -6,8 +6,8 @@ A guide to creating and distributing custom themes.
 
 NOTE:
 If you are looking for existing third party themes, they are listed in the
-MkDocs [community wiki]. If you want to share a theme you create, you
-should list it on the Wiki.
+[community wiki] page and the [MkDocs project catalog][catalog]. If you want to
+share a theme you create, you should list it there.
 
 When creating a new theme, you can either follow the steps in this guide to
 create one from scratch or you can download the `mkdocs-basic-theme` as a
@@ -16,6 +16,7 @@ this base theme on [GitHub][basic theme]**. It contains detailed comments in
 the code to describe the different features and their usage.
 
 [community wiki]: https://github.com/mkdocs/mkdocs/wiki/MkDocs-Themes
+[catalog]: https://github.com/mkdocs/catalog#-theming
 [basic theme]: https://github.com/mkdocs/mkdocs-basic-theme
 
 ## Creating a custom theme
@@ -27,7 +28,7 @@ option to the path of the directory containing `main.html`. The path should be
 relative to the configuration file. For example, given this example project
 layout:
 
-```no-highlight
+```text
 mkdocs.yml
 docs/
     index.md
@@ -42,8 +43,8 @@ directory:
 
 ```yaml
 theme:
-    name: null
-    custom_dir: 'custom_theme/'
+  name: null
+  custom_dir: 'custom_theme/'
 ```
 
 > NOTE:
@@ -86,9 +87,16 @@ The simplest `main.html` file is the following:
 <html>
   <head>
     <title>{% if page.title %}{{ page.title }} - {% endif %}{{ config.site_name }}</title>
+    {%- for path in config.extra_css %}
+      <link href="{{ path | url }}" rel="stylesheet">
+    {%- endfor %}
   </head>
   <body>
     {{ page.content }}
+
+    {%- for script in config.extra_javascript %}
+      {{ script | script_tag }}
+    {%- endfor %}
   </body>
 </html>
 ```
@@ -111,9 +119,61 @@ required, third party template authors are encouraged to follow a similar
 pattern and may want to define the same [blocks] as are used in the built-in
 themes for consistency.
 
-[Jinja]: http://jinja.pocoo.org/
-[template inheritance]: http://jinja.pocoo.org/docs/dev/templates/#template-inheritance
+[Jinja]: https://jinja.palletsprojects.com/
+[template inheritance]: https://jinja.palletsprojects.com/en/latest/templates/#template-inheritance
 [blocks]: ../user-guide/customizing-your-theme.md#overriding-template-blocks
+
+### Picking up CSS and JavaScript from the config
+
+MkDocs defines the top-level [extra_css](../user-guide/configuration.md#extra_css) and [extra_javascript](../user-guide/configuration.md#extra_javascript) configs. These are lists of files.
+
+The theme must include the HTML that links the items from these configs, otherwise the configs will be non-functional. You can see the recommended way to render both of them in the [base example above](#basic-theme).
+
+> NEW: **Changed in version 1.5:**
+>
+> The items of the `config.extra_javascript` list used to be simple strings but now became objects that have these fields: `path`, `type`, `async`, `defer`.
+>
+> In that version, MkDocs also gained the [`script_tag` filter](#script_tag).
+>
+> >? EXAMPLE: **Obsolete style:**
+> >
+> > ```django
+> >   {%- for path in extra_javascript %}
+> >     <script src="{{ path }}"></script>
+> >   {%- endfor %}
+> > ```
+> >
+> > This old-style example even uses the obsolete top-level `extra_javascript` list. Please always use `config.extra_javascript` instead.
+> >
+> > So, a slightly more modern approach is the following, but it is still obsolete because it ignores the extra attributes of the script:
+> >
+> > ```django
+> >   {%- for path in config.extra_javascript %}
+> >     <script src="{{ path | url }}"></script>
+> >   {%- endfor %}
+> > ```
+> <!-- -->
+> >? EXAMPLE: **New style:**
+> >
+> > ```django
+> >   {%- for script in config.extra_javascript %}
+> >     {{ script | script_tag }}
+> >   {%- endfor %}
+> > ```
+>
+> If you wish to be able to pick up the new customizations while keeping your theme compatible with older versions of MkDocs, use this snippet:
+>
+> >! EXAMPLE: **Backwards-compatible style:**
+> >
+> > ```django
+> >   {%- for script in config.extra_javascript %}
+> >     {%- if script.path %}  {# Detected MkDocs 1.5+ which has `script.path` and `script_tag` #}
+> >       {{ script | script_tag }}
+> >     {%- else %}  {# Fallback - examine the file name directly #}
+> >       <script src="{{ script | url }}"{% if script.endswith(".mjs") %} type="module"{% endif %}></script>
+> >     {%- endif %}
+> >   {%- endfor %}
+> > ```
 
 ## Theme Files
 
@@ -226,7 +286,7 @@ Following is a basic usage example which outputs the first and second level
 navigation as a nested list.
 
 ```django
-{% if nav|length>1 %}
+{% if nav|length > 1 %}
     <ul>
     {% for nav_item in nav %}
         {% if nav_item.children %}
@@ -326,7 +386,7 @@ for a page.
 
 In this example we define a `source` property above the page title:
 
-```no-highlight
+```text
 source: generics.py
         mixins.py
 
@@ -407,7 +467,7 @@ on the homepage:
         show_root_full_path: false
         heading_level: 5
 
-::: mkdocs.structure.pages.Page.parent
+::: mkdocs.structure.StructureItem.parent
     options:
         show_root_full_path: false
         heading_level: 5
@@ -478,7 +538,7 @@ The following attributes are available on `section` objects:
         show_root_full_path: false
         heading_level: 5
 
-::: mkdocs.structure.nav.Section.parent
+::: mkdocs.structure.StructureItem.parent
     options:
         show_root_full_path: false
         heading_level: 5
@@ -532,7 +592,7 @@ The following attributes are available on `link` objects:
         show_root_full_path: false
         heading_level: 5
 
-::: mkdocs.structure.nav.Link.parent
+::: mkdocs.structure.StructureItem.parent
     options:
         show_root_full_path: false
         heading_level: 5
@@ -574,11 +634,11 @@ following `extra` configuration:
 
 ```yaml
 extra:
-    version: 0.13.0
-    links:
-        - https://github.com/mkdocs
-        - https://docs.readthedocs.org/en/latest/builds.html#mkdocs
-        - https://www.mkdocs.org/
+  version: 0.13.0
+  links:
+    - https://github.com/mkdocs
+    - https://docs.readthedocs.org/en/latest/builds.html#mkdocs
+    - https://www.mkdocs.org/
 ```
 
 And then displayed with this HTML in the custom theme.
@@ -613,13 +673,21 @@ returned relative to the page object. Otherwise, the URL is returned with
 
 ### tojson
 
-Safety convert a Python object to a value in a JavaScript script.
+Safely convert a Python object to a value in a JavaScript script.
 
 ```django
 <script>
     var mkdocs_page_name = {{ page.title|tojson|safe }};
 </script>
 ```
+
+### script_tag
+
+NEW: **New in version 1.5.**
+
+Convert an item from `extra_javascript` to a `<script>` tag that takes into account all [customizations of this config](../user-guide/configuration.md#extra_javascript) and has the equivalent of [`|url`](#url) behavior built-in.
+
+See how to use it in the [base example above](#basic-theme)
 
 ## Search and themes
 
@@ -632,7 +700,7 @@ and themes should account for this. It is recommended that theme templates wrap
 search specific markup with a check for the plugin:
 
 ```django
-{% if 'search' in config['plugins'] %}
+{% if 'search' in config.plugins %}
     search stuff here...
 {% endif %}
 ```
@@ -648,7 +716,7 @@ JavaScript is able to properly load the search scripts and make relative links
 to the search results from the current page.
 
 ```django
-<script>var base_url = '{{ base_url }}';</script>
+<script>var base_url = {{ base_url|tojson }};</script>
 ```
 
 With properly configured settings, the following HTML in a template  will add a
@@ -727,7 +795,7 @@ created if the user explicitly enables the [prebuild_index] config option.
 Themes should expect the index to not be present, but can choose to use the
 index when it is available. The `index` object was new in MkDocs version *1.0*.
 
-[Jinja2 template]: http://jinja.pocoo.org/docs/dev/
+[Jinja2 template]: https://jinja.palletsprojects.com/
 [built-in themes]: https://github.com/mkdocs/mkdocs/tree/master/mkdocs/themes
 [theme's configuration file]: #theme-configuration
 [lunr.js]: https://lunrjs.com/
@@ -764,7 +832,7 @@ directory called `MANIFEST.in` and `setup.py` beside the theme directory which
 contains an empty `__init__.py` file, a theme configuration file
 (`mkdocs_theme.yml`), and your template and media files.
 
-```no-highlight
+```text
 .
 |-- MANIFEST.in
 |-- theme_name
@@ -778,7 +846,7 @@ contains an empty `__init__.py` file, a theme configuration file
 The `MANIFEST.in` file should contain the following contents but with
 theme_name updated and any extra file extensions added to the include.
 
-```no-highlight
+```text
 recursive-include theme_name *.ico *.js *.css *.png *.html *.eot *.svg *.ttf *.woff
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
@@ -860,8 +928,8 @@ file:
 
 ```yaml
 theme:
-    name: themename
-    show_sidebar: false
+  name: themename
+  show_sidebar: false
 ```
 
 In addition to arbitrary options defined by the theme, MkDocs defines a few
@@ -885,21 +953,29 @@ special options which alters its behavior:
 > `Locale.territory` attributes and will resolve as a string from within a
 > template. Therefore, the following will work fine:
 >
->     <html lang="{ config.theme.locale }">
+> ```html
+> <html lang="{ config.theme.locale }">
+> ```
 >
 > If the locale was set to `fr_CA` (Canadian French), then the above template
 > would render as:
 >
->     <html lang="fr_CA">
+> ```html
+> <html lang="fr_CA">
+> ```
 >
 > If you did not want the territory attribute to be included, then reference
 > the `language` attribute directly:
 >
->     <html lang="{ config.theme.locale.language }">
+> ```html
+> <html lang="{ config.theme.locale.language }">
+> ```
 >
 > That would render as:
 >
->     <html lang="fr">
+> ```html
+> <html lang="fr">
+> ```
 >
 > #### static_templates
 >
@@ -927,7 +1003,7 @@ the setup.py.
 Most Python packages, including MkDocs, are distributed on PyPI. To do this,
 you should run the following command.
 
-```no-highlight
+```bash
 python setup.py register
 ```
 
@@ -956,142 +1032,24 @@ same commands utilized by MkDocs.
 
 [localization/translation]: ../user-guide/localizing-your-theme.md
 
-### Enabling the Localization/Translation commands
-
-MkDocs includes some helper commands which are light wrappers around [pybabel's
-commands][pybabel]. To use the commands on your own theme, add the following to
-your theme's `setup.py` script:
-
-```python
-from mkdocs.commands.setup import babel_cmdclass
-
-setup(
-    ...
-    cmdclass=babel_cmdclass
-)
-```
-
-Note that `cmdclass=babel_cmdclass` was added an a parameter passed to
-the `setup` function.
+### Using the Localization/Translation commands
 
 WARNING:
-As **pybabel is not installed by default** and most users will not have
+As **[pybabel] is not installed by default** and most users will not have
 pybabel installed, theme developers and/or translators should make sure to
 have installed the necessary dependencies
 (using `pip install mkdocs[i18n]`) in order for the commands to be
 available for use.
 
-[pybabel]: https://babel.pocoo.org/en/latest/setup.html
-
-### Using the Localization/Translation commands
-
-Since the translation commands are embedded in the `setup.py` script of your
-custom theme they should be called from the root of your theme's working
-tree as follows:
-
-```bash
-python setup.py <command_name> [OPTIONS]
-```
-
-Each command provides a detailed list of options available with the `-h/--help`
-option.
+The translation commands should be called from the root of your theme's working tree.
 
 For an overview of the workflow used by MkDocs to translate the built-in
 themes, see the appropriate [section] of the Contributing Guide and the
 [Translation Guide].
 
-Default values for many of the options to the commands can be defined in a
-`setup.cfg` file. Create a section using the command name as the section name,
-and the long option name as the key. See MkDocs' own [setup.cfg] file for an
-example.
-
-A summary of changes/additions to the behavior and options of the upstream
-[pybabel commands][pybabel] are summarized below.
-
+[pybabel]: https://babel.pocoo.org/en/latest/setup.html
 [section]: ../about/contributing.md#submitting-changes-to-the-builtin-themes
 [Translation Guide]: translations.md
-[setup.cfg]: https://github.com/mkdocs/mkdocs/blob/master/setup.cfg
-
-#### compile_catalog
-
-The `-t/--theme` option has been added to this command. The `theme` specified
-must be a `theme` defined as a entry point in the same `setup.py` script. Other
-themes will not be recognized. If only one `theme` has been defined as an entry
-point, then that `theme` will be used as the default if none is specified by
-this option. If more than one `theme` is defined as entry points, then no
-default is set and a `theme` must be specified by this option. The command only
-operates on one theme at a time. Therefore, the command needs to be run once
-for each theme included in a package.
-
-When a `theme` is specified, the directory of that `theme` as defined in the
-entry point is used to define a default value of the `-d/--directory` option.
-The `--directory` option is set to `{theme_dir}/locales`. If a `directory` is
-passed to the `--directory` option, then the `theme` option is ignored.
-
-#### extract_messages
-
-The `-t/--theme` option has been added to this command. The `theme` specified
-must be a `theme` defined as a entry point in the same `setup.py` script. Other
-themes will not be recognized. If only one `theme` has been defined as an entry
-point, then that `theme` will be used as the default if none is specified by
-this option. If more than one `theme` is defined as entry points, then no
-default is set and a `theme` must be specified by this option. The command only
-operates on one theme at a time. Therefore, the command needs to be run once
-for each theme included in a package.
-
-When a `theme` is specified, the directory of that `theme` as defined in the
-entry point is used to define a default value for the `--input-dirs` and
-`--output-file` options. The `--input-dirs` option is set to the `theme`
-directory and `--output-file` is set to `{theme_dir}/{domain}.pot`. If a path
-is provided to either option, then the `theme` option is ignored for that
-option.
-
-The `--domain` option has been added to this command and can be used to
-override the `domain` used for the `output-file` based on the `theme`.
-Defaults to `messages`.
-
-The `-F/--mapping-file` option defaults to the [mapping file] used by MkDocs'
-built-in themes. However, if that mapping file does not meet your theme's needs
-to can override it by providing your own and passing the path of that file into
-the option.
-
-[mapping file]: https://github.com/mkdocs/mkdocs/tree/master/mkdocs/themes/babel.cfg
-
-#### init_catalog
-
-The `-t/--theme` option has been added to this command. The `theme` specified
-must be a `theme` defined as a entry point in the same `setup.py` script. Other
-themes will not be recognized. If only one `theme` has been defined as an entry
-point, then that `theme` will be used as the default if none is specified by
-this option. If more than one `theme` is defined as entry points, then no
-default is set and a `theme` must be specified by this option. The command only
-operates on one theme at a time. Therefore, the command needs to be run once
-for each theme included in a package.
-
-When a `theme` is specified, the directory of that `theme` as defined in the
-entry point is used to define a default value for the `-i/--input-file` and
-`-d/--output-dir` options. The `--input-file` option is set to
-`{theme_dir}/{domain}.pot` (`domain` defaults to `messages`) and `--output-dir`
-is set to `{theme_dir}/locales`. If a path is provided to either option, then
-the `theme` option is ignored for that option.
-
-#### update_catalog
-
-The `-t/--theme` option has been added to this command. The `theme` specified
-must be a `theme` defined as a entry point in the same `setup.py` script. Other
-themes will not be recognized. If only one `theme` has been defined as an entry
-point, then that `theme` will be used as the default if none is specified by
-this option. If more than one `theme` is defined as entry points, then no
-default is set and a `theme` must be specified by this option. The command only
-operates on one theme at a time. Therefore, the command needs to be run once
-for each theme included in a package.
-
-When a `theme` is specified, the directory of that `theme` as defined in the
-entry point is used to define a default value for the `-i/--input-file` and
-`-d/--output-dir` options. The `--input-file` option is set to
-`{theme_dir}/{domain}.pot` (`domain` defaults to `messages`) and `--output-dir`
-is set to `{theme_dir}/locales`. If a path is provided to either option, then
-the `theme` option is ignored for that option.
 
 ### Example custom theme Localization/Translation workflow
 
@@ -1106,28 +1064,7 @@ the `theme` option is ignored for that option.
 Let's suppose that you're working on your own fork of the
 [mkdocs-basic-theme][basic theme] and want to add translations to it.
 
-You would first modify the `setup.py` like this:
-
-```diff
---- a/setup.py
-+++ b/setup.py
-@@ -1,4 +1,5 @@
- from setuptools import setup, find_packages
-+from mkdocs.commands.setup import babel_cmdclass
-
- VERSION = '1.1'
-
-@@ -18,5 +19,6 @@ setup(
-             'basictheme = basic_theme',
-         ]
-     },
--    zip_safe=False
-+    zip_safe=False,
-+    cmdclass=babel_cmdclass
- )
-```
-
-Next, you would edit the templates by wrapping text in your HTML sources with
+Edit the templates by wrapping text in your HTML sources with
 `{% trans %}` and `{% endtrans %}` as follows:
 
 ```diff
@@ -1155,12 +1092,8 @@ While the Portable Object Template (`pot`) file created by the
 editing translations, they are not used by MkDocs directly and do not need to
 be included in a packaged release of a theme. When MkDocs builds a site with
 translations, it only makes use of the binary `mo` files(s) for the specified
-locale. Therefore, when [packaging a theme], you would need to make the
-following addition to your `MANIFEST.in` file:
-
-``` no-highlight
-recursive-include theme_name *.mo
-```
+locale. Therefore, when [packaging a theme], make sure to include it in the
+"wheels", using a `MANIFEST.in` file or otherwise.
 
 Then, before building your Python package, you will want to ensure that the
 binary `mo` file for each locale is up-to-date by running the `compile_catalog`

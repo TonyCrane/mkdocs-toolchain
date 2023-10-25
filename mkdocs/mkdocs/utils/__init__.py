@@ -17,18 +17,7 @@ import warnings
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import PurePath
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    MutableSequence,
-    Optional,
-    Tuple,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Collection, Iterable, MutableSequence, TypeVar
 from urllib.parse import urlsplit
 
 if sys.version_info >= (3, 10):
@@ -36,11 +25,8 @@ if sys.version_info >= (3, 10):
 else:
     from importlib_metadata import EntryPoint, entry_points
 
-import yaml
-from mergedeep import merge
-from yaml_env_tag import construct_env_tag
-
 from mkdocs import exceptions
+from mkdocs.utils.yaml import get_yaml_loader, yaml_load  # noqa: F401 - legacy re-export
 
 if TYPE_CHECKING:
     from mkdocs.structure.pages import Page
@@ -56,50 +42,6 @@ markdown_extensions = (
     '.mkd',
     '.md',
 )
-
-
-def get_yaml_loader(loader=yaml.Loader):
-    """Wrap PyYaml's loader so we can extend it to suit our needs."""
-
-    class Loader(loader):
-        """
-        Define a custom loader derived from the global loader to leave the
-        global loader unaltered.
-        """
-
-    # Attach Environment Variable constructor.
-    # See https://github.com/waylan/pyyaml-env-tag
-    Loader.add_constructor('!ENV', construct_env_tag)
-
-    return Loader
-
-
-def yaml_load(source: IO, loader=None) -> Optional[Dict[str, Any]]:
-    """Return dict of source YAML file using loader, recursively deep merging inherited parent."""
-    Loader = loader or get_yaml_loader()
-    result = yaml.load(source, Loader=Loader)
-    if result is not None and 'INHERIT' in result:
-        relpath = result.pop('INHERIT')
-        abspath = os.path.normpath(os.path.join(os.path.dirname(source.name), relpath))
-        if not os.path.exists(abspath):
-            raise exceptions.ConfigurationError(
-                f"Inherited config file '{relpath}' does not exist at '{abspath}'."
-            )
-        log.debug(f"Loading inherited configuration file: {abspath}")
-        with open(abspath, 'rb') as fd:
-            parent = yaml_load(fd, Loader)
-        result = merge(parent, result)
-    return result
-
-
-def modified_time(file_path):
-    warnings.warn(
-        "modified_time is never used in MkDocs and will be removed soon.", DeprecationWarning
-    )
-    if os.path.exists(file_path):
-        return os.path.getmtime(file_path)
-    else:
-        return 0.0
 
 
 def get_build_timestamp() -> int:
@@ -140,8 +82,18 @@ def get_build_date() -> str:
     return get_build_datetime().strftime('%Y-%m-%d')
 
 
-def reduce_list(data_set: Iterable[str]) -> List[str]:
-    """Reduce duplicate items in a list and preserve order"""
+if sys.version_info >= (3, 9):
+    _removesuffix = str.removesuffix
+else:
+
+    def _removesuffix(s: str, suffix: str) -> str:
+        if suffix and s.endswith(suffix):
+            return s[: -len(suffix)]
+        return s
+
+
+def reduce_list(data_set: Iterable[T]) -> list[T]:
+    """Reduce duplicate items in a list and preserve order."""
     return list(dict.fromkeys(data_set))
 
 
@@ -171,9 +123,7 @@ def copy_file(source_path: str, output_path: str) -> None:
 
 
 def write_file(content: bytes, output_path: str) -> None:
-    """
-    Write content to output_path, making sure any parent directories exist.
-    """
+    """Write content to output_path, making sure any parent directories exist."""
     output_dir = os.path.dirname(output_path)
     os.makedirs(output_dir, exist_ok=True)
     with open(output_path, 'wb') as f:
@@ -181,9 +131,7 @@ def write_file(content: bytes, output_path: str) -> None:
 
 
 def clean_directory(directory: str) -> None:
-    """
-    Remove the content of a directory recursively but not the directory itself.
-    """
+    """Remove the content of a directory recursively but not the directory itself."""
     if not os.path.exists(directory):
         return
 
@@ -200,27 +148,6 @@ def clean_directory(directory: str) -> None:
             os.unlink(path)
 
 
-def get_html_path(path):
-    warnings.warn(
-        "get_html_path is never used in MkDocs and will be removed soon.", DeprecationWarning
-    )
-    path = os.path.splitext(path)[0]
-    if os.path.basename(path) == 'index':
-        return path + '.html'
-    return "/".join((path, 'index.html'))
-
-
-def get_url_path(path, use_directory_urls=True):
-    warnings.warn(
-        "get_url_path is never used in MkDocs and will be removed soon.", DeprecationWarning
-    )
-    path = get_html_path(path)
-    url = '/' + path.replace(os.sep, '/')
-    if use_directory_urls:
-        return url[: -len('index.html')]
-    return url
-
-
 def is_markdown_file(path: str) -> bool:
     """
     Return True if the given file path is a Markdown file.
@@ -230,32 +157,16 @@ def is_markdown_file(path: str) -> bool:
     return path.endswith(markdown_extensions)
 
 
-def is_html_file(path):
-    warnings.warn(
-        "is_html_file is never used in MkDocs and will be removed soon.", DeprecationWarning
-    )
-    return path.lower().endswith(('.html', '.htm'))
-
-
-def is_template_file(path):
-    warnings.warn(
-        "is_template_file is never used in MkDocs and will be removed soon.", DeprecationWarning
-    )
-    return path.lower().endswith(('.html', '.htm', '.xml'))
-
-
 _ERROR_TEMPLATE_RE = re.compile(r'^\d{3}\.html?$')
 
 
 def is_error_template(path: str) -> bool:
-    """
-    Return True if the given file path is an HTTP error template.
-    """
+    """Return True if the given file path is an HTTP error template."""
     return bool(_ERROR_TEMPLATE_RE.match(path))
 
 
 @functools.lru_cache(maxsize=None)
-def _norm_parts(path: str) -> List[str]:
+def _norm_parts(path: str) -> list[str]:
     if not path.startswith('/'):
         path = '/' + path
     path = posixpath.normpath(path)[1:]
@@ -290,59 +201,67 @@ def get_relative_url(url: str, other: str) -> str:
     return relurl + '/' if url.endswith('/') else relurl
 
 
-def normalize_url(path: str, page: Optional[Page] = None, base: str = '') -> str:
+def normalize_url(path: str, page: Page | None = None, base: str = '') -> str:
     """Return a URL relative to the given page or using the base."""
-    path, is_abs = _get_norm_url(path)
-    if is_abs:
+    path, relative_level = _get_norm_url(path)
+    if relative_level == -1:
         return path
     if page is not None:
-        return get_relative_url(path, page.url)
+        result = get_relative_url(path, page.url)
+        if relative_level > 0:
+            result = '../' * relative_level + result
+        return result
+
     return posixpath.join(base, path)
 
 
 @functools.lru_cache(maxsize=None)
-def _get_norm_url(path: str) -> Tuple[str, bool]:
+def _get_norm_url(path: str) -> tuple[str, int]:
     if not path:
         path = '.'
-    elif os.sep != '/' and os.sep in path:
+    elif '\\' in path:
         log.warning(
-            f"Path '{path}' uses OS-specific separator '{os.sep}', "
-            f"change it to '/' so it is recognized on other systems."
+            f"Path '{path}' uses OS-specific separator '\\'. "
+            f"That will be unsupported in a future release. Please change it to '/'."
         )
-        path = path.replace(os.sep, '/')
+        path = path.replace('\\', '/')
     # Allow links to be fully qualified URLs
     parsed = urlsplit(path)
     if parsed.scheme or parsed.netloc or path.startswith(('/', '#')):
-        return path, True
-    return path, False
+        return path, -1
+
+    # Relative path - preserve information about it
+    norm = posixpath.normpath(path) + '/'
+    relative_level = 0
+    while norm.startswith('../', relative_level * 3):
+        relative_level += 1
+    return path, relative_level
 
 
 def create_media_urls(
-    path_list: List[str], page: Optional[Page] = None, base: str = ''
-) -> List[str]:
-    """
-    Return a list of URLs relative to the given page or using the base.
-    """
+    path_list: Iterable[str], page: Page | None = None, base: str = ''
+) -> list[str]:
+    """Soft-deprecated, do not use."""
     return [normalize_url(path, page, base) for path in path_list]
 
 
 def path_to_url(path):
-    """Soft-deprecated, do not use."""
+    warnings.warn(
+        "path_to_url is never used in MkDocs and will be removed soon.", DeprecationWarning
+    )
     return path.replace('\\', '/')
 
 
 def get_theme_dir(name: str) -> str:
     """Return the directory of an installed theme by name."""
-
     theme = get_themes()[name]
     return os.path.dirname(os.path.abspath(theme.load().__file__))
 
 
-def get_themes() -> Dict[str, EntryPoint]:
+def get_themes() -> dict[str, EntryPoint]:
     """Return a dict of all installed themes as {name: EntryPoint}."""
-
-    themes: Dict[str, EntryPoint] = {}
-    eps: Dict[EntryPoint, None] = dict.fromkeys(entry_points(group='mkdocs.themes'))
+    themes: dict[str, EntryPoint] = {}
+    eps: dict[EntryPoint, None] = dict.fromkeys(entry_points(group='mkdocs.themes'))
     builtins = {ep.name for ep in eps if ep.dist is not None and ep.dist.name == 'mkdocs'}
 
     for theme in eps:
@@ -366,9 +285,8 @@ def get_themes() -> Dict[str, EntryPoint]:
     return themes
 
 
-def get_theme_names():
+def get_theme_names() -> Collection[str]:
     """Return a list of all installed themes by name."""
-
     return get_themes().keys()
 
 
@@ -383,14 +301,8 @@ def dirname_to_title(dirname: str) -> str:
     return title
 
 
-def get_markdown_title(markdown_src: str) -> Optional[str]:
-    """
-    Get the title of a Markdown document. The title in this case is considered
-    to be a H1 that occurs before any other content in the document.
-    The procedure is then to iterate through the lines, stopping at the first
-    non-whitespace content. If it is a title, return that, otherwise return
-    None.
-    """
+def get_markdown_title(markdown_src: str) -> str | None:
+    """Soft-deprecated, do not use."""
     lines = markdown_src.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     while lines:
         line = lines.pop(0).strip()
@@ -441,11 +353,23 @@ def nest_paths(paths):
     return nested
 
 
+class DuplicateFilter:
+    """Avoid logging duplicate messages."""
+
+    def __init__(self) -> None:
+        self.msgs: set[str] = set()
+
+    def __call__(self, record: logging.LogRecord) -> bool:
+        rv = record.msg not in self.msgs
+        self.msgs.add(record.msg)
+        return rv
+
+
 class CountHandler(logging.NullHandler):
     """Counts all logged messages >= level."""
 
     def __init__(self, **kwargs) -> None:
-        self.counts: Dict[int, int] = defaultdict(int)
+        self.counts: dict[int, int] = defaultdict(int)
         super().__init__(**kwargs)
 
     def handle(self, record):
@@ -455,11 +379,30 @@ class CountHandler(logging.NullHandler):
             self.counts[record.levelno] += 1
         return rv
 
-    def get_counts(self) -> List[Tuple[str, int]]:
+    def get_counts(self) -> list[tuple[str, int]]:
         return [(logging.getLevelName(k), v) for k, v in sorted(self.counts.items(), reverse=True)]
 
 
-# For backward compatibility as some plugins import it.
-# It is no longer necessary as all messages on the
-# `mkdocs` logger get counted automatically.
-warning_filter = logging.Filter()
+class weak_property:
+    """Same as a read-only property, but allows overwriting the field for good."""
+
+    def __init__(self, func):
+        self.func = func
+        self.__doc__ = func.__doc__
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            return self
+        return self.func(instance)
+
+
+def __getattr__(name: str):
+    if name == 'warning_filter':
+        warnings.warn(
+            "warning_filter doesn't do anything since MkDocs 1.2 and will be removed soon. "
+            "All messages on the `mkdocs` logger get counted automatically.",
+            DeprecationWarning,
+        )
+        return logging.Filter()
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

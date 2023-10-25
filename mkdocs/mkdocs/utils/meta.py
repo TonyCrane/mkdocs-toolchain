@@ -35,7 +35,7 @@ Extracts, parses and transforms MultiMarkdown style data from documents.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import yaml
 
@@ -53,7 +53,7 @@ META_RE = re.compile(r'^[ ]{0,3}(?P<key>[A-Za-z0-9_-]+):\s*(?P<value>.*)')
 META_MORE_RE = re.compile(r'^([ ]{4}|\t)(\s*)(?P<value>.*)')
 
 
-def get_data(doc: str) -> Tuple[str, Dict[str, Any]]:
+def get_data(doc: str) -> tuple[str, dict[str, Any]]:
     """
     Extract meta-data from a text document.
 
@@ -62,8 +62,7 @@ def get_data(doc: str) -> Tuple[str, Dict[str, Any]]:
     data = {}
 
     # First try YAML
-    m = YAML_RE.match(doc)
-    if m:
+    if m := YAML_RE.match(doc):
         try:
             data = yaml.load(m.group(1), SafeLoader)
             if isinstance(data, dict):
@@ -83,8 +82,7 @@ def get_data(doc: str) -> Tuple[str, Dict[str, Any]]:
 
         if line.strip() == '':
             break  # blank line - done
-        m1 = META_RE.match(line)
-        if m1:
+        if m1 := META_RE.match(line):
             key = m1.group('key').lower().strip()
             value = m1.group('value').strip()
             if key in data:

@@ -38,16 +38,16 @@ as you work on it. Make sure you're in the same directory as the `mkdocs.yml`
 configuration file, and then start the server by running the `mkdocs serve`
 command:
 
-```bash
+```console
 $ mkdocs serve
 INFO    -  Building documentation...
 INFO    -  Cleaning site directory
-[I 160402 15:50:43 server:271] Serving on http://127.0.0.1:8000
-[I 160402 15:50:43 handlers:58] Start watching changes
-[I 160402 15:50:43 handlers:60] Start detecting changes
+INFO    -  Documentation built in 0.22 seconds
+INFO    -  [15:50:43] Watching paths for changes: 'docs', 'mkdocs.yml'
+INFO    -  [15:50:43] Serving on http://127.0.0.1:8000/
 ```
 
-Open up `http://127.0.0.1:8000/` in your browser, and you'll see the default
+Open up <http://127.0.0.1:8000/> in your browser, and you'll see the default
 home page being displayed:
 
 ![The MkDocs live server](img/screenshot.png)
@@ -98,8 +98,8 @@ setting:
 site_name: MkLorum
 site_url: https://example.com/
 nav:
-    - Home: index.md
-    - About: about.md
+  - Home: index.md
+  - About: about.md
 ```
 
 Save your changes and you'll now see a navigation bar with `Home` and `About`
@@ -126,8 +126,8 @@ changing the theme. Edit the `mkdocs.yml` file and add a [`theme`][theme] settin
 site_name: MkLorum
 site_url: https://example.com/
 nav:
-    - Home: index.md
-    - About: about.md
+  - Home: index.md
+  - About: about.md
 theme: readthedocs
 ```
 
@@ -156,7 +156,7 @@ mkdocs build
 This will create a new directory, named `site`. Take a look inside the
 directory:
 
-```bash
+```console
 $ ls site
 about  fonts  index.html  license  search.html
 css    img    js          mkdocs   sitemap.xml
@@ -218,4 +218,4 @@ To get help with MkDocs, please use the [GitHub discussions] or [GitHub issues].
 [site_name]: user-guide/configuration.md#site_name
 [site_url]: user-guide/configuration.md#site_url
 [theme]: user-guide/configuration.md#theme
-[User Guide]: user-guide/index.md
+[User Guide]: user-guide/README.md

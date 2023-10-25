@@ -3,7 +3,7 @@ import sys
 import unittest
 from unittest import mock
 
-from mkdocs.structure.files import File, Files, _filter_paths, _sort_files, get_files
+from mkdocs.structure.files import File, Files, _sort_files, get_files
 from mkdocs.tests.base import PathAssertionMixin, load_config, tempdir
 
 
@@ -60,7 +60,7 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
 
         self.assertEqual(
             _sort_files(['a.md', 'index.md', 'b.md', 'index.html']),
-            ['index.md', 'index.html', 'a.md', 'b.md'],
+            ['index.html', 'index.md', 'a.md', 'b.md'],
         )
 
         self.assertEqual(
@@ -168,7 +168,7 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
         self.assertPathsEqual(f.abs_src_path, '/path/to/docs/index.md')
         self.assertEqual(f.dest_uri, 'index.html')
         self.assertPathsEqual(f.abs_dest_path, '/path/to/site/index.html')
-        self.assertEqual(f.url, '.')
+        self.assertEqual(f.url, './')
         self.assertEqual(f.name, 'index')
         self.assertTrue(f.is_documentation_page())
         self.assertFalse(f.is_static_page())
@@ -182,7 +182,7 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
         self.assertPathsEqual(f.abs_src_path, '/path/to/docs/README.md')
         self.assertEqual(f.dest_uri, 'index.html')
         self.assertPathsEqual(f.abs_dest_path, '/path/to/site/index.html')
-        self.assertEqual(f.url, '.')
+        self.assertEqual(f.url, './')
         self.assertEqual(f.name, 'index')
         self.assertTrue(f.is_documentation_page())
         self.assertFalse(f.is_static_page())
@@ -339,6 +339,26 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
         self.assertEqual(f.url, 'foo%20bar.html')
         self.assertEqual(f.name, 'foo bar')
 
+    def test_file_name_with_custom_dest_uri(self):
+        for use_directory_urls in True, False:
+            with self.subTest(use_directory_urls=use_directory_urls):
+                f = File(
+                    'stuff/foo.md',
+                    src_dir='/path/to/docs',
+                    dest_dir='/path/to/site',
+                    use_directory_urls=use_directory_urls,
+                    dest_uri='stuff/1-foo/index.html',
+                )
+                self.assertEqual(f.src_uri, 'stuff/foo.md')
+                self.assertPathsEqual(f.abs_src_path, '/path/to/docs/stuff/foo.md')
+                self.assertEqual(f.dest_uri, 'stuff/1-foo/index.html')
+                self.assertPathsEqual(f.abs_dest_path, '/path/to/site/stuff/1-foo/index.html')
+                if use_directory_urls:
+                    self.assertEqual(f.url, 'stuff/1-foo/')
+                else:
+                    self.assertEqual(f.url, 'stuff/1-foo/index.html')
+                self.assertEqual(f.name, 'foo')
+
     def test_files(self):
         fs = [
             File('index.md', '/path/to/docs', '/path/to/site', use_directory_urls=True),
@@ -349,7 +369,7 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             File('foo/bar.css', '/path/to/docs', '/path/to/site', use_directory_urls=True),
         ]
         files = Files(fs)
-        self.assertEqual([f for f in files], fs)
+        self.assertEqual(list(files), fs)
         self.assertEqual(len(files), 6)
         self.assertEqual(files.documentation_pages(), [fs[0], fs[1]])
         self.assertEqual(files.static_pages(), [fs[2]])
@@ -360,13 +380,14 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
         self.assertEqual(files.get_file_from_path('foo/bar.jpg'), fs[3])
         self.assertEqual(files.get_file_from_path('missing.jpg'), None)
         self.assertTrue(fs[2].src_uri in files.src_uris)
-        self.assertTrue(fs[2].src_uri in files.src_uris)
         extra_file = File('extra.md', '/path/to/docs', '/path/to/site', use_directory_urls=True)
         self.assertFalse(extra_file.src_uri in files.src_uris)
         files.append(extra_file)
         self.assertEqual(len(files), 7)
         self.assertTrue(extra_file.src_uri in files.src_uris)
         self.assertEqual(files.documentation_pages(), [fs[0], fs[1], extra_file])
+        files.remove(fs[1])
+        self.assertEqual(files.documentation_pages(), [fs[0], extra_file])
 
     @tempdir(
         files=[
@@ -389,15 +410,15 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
     )
     def test_add_files_from_theme(self, tdir, ddir):
         config = load_config(docs_dir=ddir, theme={'name': None, 'custom_dir': tdir})
-        env = config['theme'].get_env()
+        env = config.theme.get_env()
         files = get_files(config)
         self.assertEqual(
-            [file.src_path for file in files],
+            [file.src_uri for file in files],
             ['index.md', 'favicon.ico'],
         )
         files.add_files_from_theme(env, config)
         self.assertEqual(
-            [file.src_path for file in files],
+            [file.src_uri for file in files],
             ['index.md', 'favicon.ico', 'style.css'],
         )
         # Ensure theme file does not override docs_dir file
@@ -405,34 +426,6 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             files.get_file_from_path('favicon.ico').abs_src_path,
             os.path.normpath(os.path.join(ddir, 'favicon.ico')),
         )
-
-    def test_filter_paths(self):
-        # Root level file
-        self.assertFalse(_filter_paths('foo.md', 'foo.md', False, ['bar.md']))
-        self.assertTrue(_filter_paths('foo.md', 'foo.md', False, ['foo.md']))
-
-        # Nested file
-        self.assertFalse(_filter_paths('foo.md', 'baz/foo.md', False, ['bar.md']))
-        self.assertTrue(_filter_paths('foo.md', 'baz/foo.md', False, ['foo.md']))
-
-        # Wildcard
-        self.assertFalse(_filter_paths('foo.md', 'foo.md', False, ['*.txt']))
-        self.assertTrue(_filter_paths('foo.md', 'foo.md', False, ['*.md']))
-
-        # Root level dir
-        self.assertFalse(_filter_paths('bar', 'bar', True, ['/baz']))
-        self.assertFalse(_filter_paths('bar', 'bar', True, ['/baz/']))
-        self.assertTrue(_filter_paths('bar', 'bar', True, ['/bar']))
-        self.assertTrue(_filter_paths('bar', 'bar', True, ['/bar/']))
-
-        # Nested dir
-        self.assertFalse(_filter_paths('bar', 'foo/bar', True, ['/bar']))
-        self.assertFalse(_filter_paths('bar', 'foo/bar', True, ['/bar/']))
-        self.assertTrue(_filter_paths('bar', 'foo/bar', True, ['bar/']))
-
-        # Files that look like dirs (no extension). Note that `is_dir` is `False`.
-        self.assertFalse(_filter_paths('bar', 'bar', False, ['bar/']))
-        self.assertFalse(_filter_paths('bar', 'foo/bar', False, ['bar/']))
 
     def test_get_relative_url_use_directory_urls(self):
         to_files = [
@@ -444,9 +437,8 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             'foo/bar.md',
             'foo/bar/baz.md',
         ]
-
         to_file_urls = [
-            '.',
+            './',
             'foo/',
             'foo/bar/',
             'foo/bar/baz/',
@@ -456,6 +448,8 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
         ]
 
         from_file = File('img.jpg', '/path/to/docs', '/path/to/site', use_directory_urls=True)
+        self.assertEqual(from_file.url, 'img.jpg')
+
         expected = [
             'img.jpg',  # img.jpg relative to .
             '../img.jpg',  # img.jpg relative to foo/
@@ -465,15 +459,15 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             '../../img.jpg',  # img.jpg relative to foo/bar
             '../../../img.jpg',  # img.jpg relative to foo/bar/baz
         ]
-
         for i, filename in enumerate(to_files):
             file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=True)
-            self.assertEqual(from_file.url, 'img.jpg')
             self.assertEqual(file.url, to_file_urls[i])
             self.assertEqual(from_file.url_relative_to(file.url), expected[i])
             self.assertEqual(from_file.url_relative_to(file), expected[i])
 
         from_file = File('foo/img.jpg', '/path/to/docs', '/path/to/site', use_directory_urls=True)
+        self.assertEqual(from_file.url, 'foo/img.jpg')
+
         expected = [
             'foo/img.jpg',  # foo/img.jpg relative to .
             'img.jpg',  # foo/img.jpg relative to foo/
@@ -483,33 +477,33 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             '../img.jpg',  # foo/img.jpg relative to foo/bar
             '../../img.jpg',  # foo/img.jpg relative to foo/bar/baz
         ]
-
         for i, filename in enumerate(to_files):
             file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=True)
-            self.assertEqual(from_file.url, 'foo/img.jpg')
             self.assertEqual(file.url, to_file_urls[i])
             self.assertEqual(from_file.url_relative_to(file.url), expected[i])
             self.assertEqual(from_file.url_relative_to(file), expected[i])
 
         from_file = File('index.html', '/path/to/docs', '/path/to/site', use_directory_urls=True)
-        expected = [
-            '.',  # . relative to .
-            '..',  # . relative to foo/
-            '../..',  # . relative to foo/bar/
-            '../../..',  # . relative to foo/bar/baz/
-            '..',  # . relative to foo
-            '../..',  # . relative to foo/bar
-            '../../..',  # . relative to foo/bar/baz
-        ]
+        self.assertEqual(from_file.url, './')
 
+        expected = [
+            './',  # . relative to .
+            '../',  # . relative to foo/
+            '../../',  # . relative to foo/bar/
+            '../../../',  # . relative to foo/bar/baz/
+            '../',  # . relative to foo
+            '../../',  # . relative to foo/bar
+            '../../../',  # . relative to foo/bar/baz
+        ]
         for i, filename in enumerate(to_files):
             file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=True)
-            self.assertEqual(from_file.url, '.')
             self.assertEqual(file.url, to_file_urls[i])
             self.assertEqual(from_file.url_relative_to(file.url), expected[i])
             self.assertEqual(from_file.url_relative_to(file), expected[i])
 
         from_file = File('file.md', '/path/to/docs', '/path/to/site', use_directory_urls=True)
+        self.assertEqual(from_file.url, 'file/')
+
         expected = [
             'file/',  # file relative to .
             '../file/',  # file relative to foo/
@@ -519,10 +513,8 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             '../../file/',  # file relative to foo/bar
             '../../../file/',  # file relative to foo/bar/baz
         ]
-
         for i, filename in enumerate(to_files):
             file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=True)
-            self.assertEqual(from_file.url, 'file/')
             self.assertEqual(file.url, to_file_urls[i])
             self.assertEqual(from_file.url_relative_to(file.url), expected[i])
             self.assertEqual(from_file.url_relative_to(file), expected[i])
@@ -537,7 +529,6 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             'foo/bar.md',
             'foo/bar/baz.md',
         ]
-
         to_file_urls = [
             'index.html',
             'foo/index.html',
@@ -549,6 +540,8 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
         ]
 
         from_file = File('img.jpg', '/path/to/docs', '/path/to/site', use_directory_urls=False)
+        self.assertEqual(from_file.url, 'img.jpg')
+
         expected = [
             'img.jpg',  # img.jpg relative to .
             '../img.jpg',  # img.jpg relative to foo/
@@ -558,16 +551,16 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             '../img.jpg',  # img.jpg relative to foo/bar.html
             '../../img.jpg',  # img.jpg relative to foo/bar/baz.html
         ]
-
         for i, filename in enumerate(to_files):
             with self.subTest(from_file=from_file.src_path, to_file=filename):
                 file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=False)
-                self.assertEqual(from_file.url, 'img.jpg')
                 self.assertEqual(file.url, to_file_urls[i])
                 self.assertEqual(from_file.url_relative_to(file.url), expected[i])
                 self.assertEqual(from_file.url_relative_to(file), expected[i])
 
         from_file = File('foo/img.jpg', '/path/to/docs', '/path/to/site', use_directory_urls=False)
+        self.assertEqual(from_file.url, 'foo/img.jpg')
+
         expected = [
             'foo/img.jpg',  # foo/img.jpg relative to .
             'img.jpg',  # foo/img.jpg relative to foo/
@@ -577,16 +570,16 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             'img.jpg',  # foo/img.jpg relative to foo/bar.html
             '../img.jpg',  # foo/img.jpg relative to foo/bar/baz.html
         ]
-
         for i, filename in enumerate(to_files):
             with self.subTest(from_file=from_file.src_path, to_file=filename):
                 file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=False)
-                self.assertEqual(from_file.url, 'foo/img.jpg')
                 self.assertEqual(file.url, to_file_urls[i])
                 self.assertEqual(from_file.url_relative_to(file.url), expected[i])
                 self.assertEqual(from_file.url_relative_to(file), expected[i])
 
         from_file = File('index.html', '/path/to/docs', '/path/to/site', use_directory_urls=False)
+        self.assertEqual(from_file.url, 'index.html')
+
         expected = [
             'index.html',  # index.html relative to .
             '../index.html',  # index.html relative to foo/
@@ -596,16 +589,16 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             '../index.html',  # index.html relative to foo/bar.html
             '../../index.html',  # index.html relative to foo/bar/baz.html
         ]
-
         for i, filename in enumerate(to_files):
             with self.subTest(from_file=from_file.src_path, to_file=filename):
                 file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=False)
-                self.assertEqual(from_file.url, 'index.html')
                 self.assertEqual(file.url, to_file_urls[i])
                 self.assertEqual(from_file.url_relative_to(file.url), expected[i])
                 self.assertEqual(from_file.url_relative_to(file), expected[i])
 
         from_file = File('file.html', '/path/to/docs', '/path/to/site', use_directory_urls=False)
+        self.assertEqual(from_file.url, 'file.html')
+
         expected = [
             'file.html',  # file.html relative to .
             '../file.html',  # file.html relative to foo/
@@ -615,11 +608,9 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             '../file.html',  # file.html relative to foo/bar.html
             '../../file.html',  # file.html relative to foo/bar/baz.html
         ]
-
         for i, filename in enumerate(to_files):
             with self.subTest(from_file=from_file.src_path, to_file=filename):
                 file = File(filename, '/path/to/docs', '/path/to/site', use_directory_urls=False)
-                self.assertEqual(from_file.url, 'file.html')
                 self.assertEqual(file.url, to_file_urls[i])
                 self.assertEqual(from_file.url_relative_to(file.url), expected[i])
                 self.assertEqual(from_file.url_relative_to(file), expected[i])
@@ -640,10 +631,15 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
     def test_get_files(self, tdir):
         config = load_config(docs_dir=tdir, extra_css=['bar.css'], extra_javascript=['bar.js'])
         files = get_files(config)
-        expected = ['index.md', 'bar.css', 'bar.html', 'bar.jpg', 'bar.js', 'bar.md', 'readme.md']
         self.assertIsInstance(files, Files)
-        self.assertEqual(len(files), len(expected))
-        self.assertEqual([f.src_path for f in files], expected)
+        self.assertEqual(
+            [f.src_uri for f in files if f.inclusion.is_included()],
+            ['index.md', 'bar.css', 'bar.html', 'bar.jpg', 'bar.js', 'bar.md', 'readme.md'],
+        )
+        self.assertEqual(
+            [f.src_uri for f in files if f.inclusion.is_excluded()],
+            ['.dotfile', 'templates/foo.html'],
+        )
 
     @tempdir(
         files=[
@@ -654,10 +650,8 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
     def test_get_files_include_readme_without_index(self, tdir):
         config = load_config(docs_dir=tdir)
         files = get_files(config)
-        expected = ['README.md', 'foo.md']
         self.assertIsInstance(files, Files)
-        self.assertEqual(len(files), len(expected))
-        self.assertEqual([f.src_path for f in files], expected)
+        self.assertEqual([f.src_uri for f in files], ['README.md', 'foo.md'])
 
     @tempdir(
         files=[
@@ -672,12 +666,11 @@ class TestFiles(PathAssertionMixin, unittest.TestCase):
             files = get_files(config)
         self.assertRegex(
             '\n'.join(cm.output),
-            r"^WARNING:mkdocs.structure.files:Both index.md and README.md found. Skipping README.md .+$",
+            r"^WARNING:mkdocs.structure.files:"
+            r"Excluding 'README.md' from the site because it conflicts with 'index.md'.$",
         )
-        expected = ['index.md', 'foo.md']
         self.assertIsInstance(files, Files)
-        self.assertEqual(len(files), len(expected))
-        self.assertEqual([f.src_path for f in files], expected)
+        self.assertEqual([f.src_uri for f in files], ['index.md', 'foo.md'])
 
     @tempdir()
     @tempdir(files={'test.txt': 'source content'})

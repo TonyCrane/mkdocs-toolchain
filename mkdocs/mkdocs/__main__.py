@@ -11,7 +11,6 @@ import traceback
 import warnings
 
 import click
-from rich.logging import RichHandler
 
 from mkdocs import __version__, config, utils
 
@@ -47,9 +46,12 @@ def _showwarning(message, category, filename, lineno, file=None, line=None):
 
 
 def _enable_warnings():
-    # warnings.simplefilter('module', DeprecationWarning)
-    # warnings.showwarning = _showwarning
-    pass
+    from mkdocs.commands import build
+
+    build.log.addFilter(utils.DuplicateFilter())
+
+    warnings.simplefilter('module', DeprecationWarning)
+    warnings.showwarning = _showwarning
 
 
 class ColorFormatter(logging.Formatter):
@@ -65,20 +67,20 @@ class ColorFormatter(logging.Formatter):
         replace_whitespace=False,
         break_long_words=False,
         break_on_hyphens=False,
-        initial_indent=' ' * 12,
-        subsequent_indent=' ' * 12,
+        initial_indent=' ' * 11,
+        subsequent_indent=' ' * 11,
     )
 
     def format(self, record):
         message = super().format(record)
-        prefix = f'{record.levelname:<8} -  '
+        prefix = f'{record.levelname:<8}-  '
         if record.levelname in self.colors:
             prefix = click.style(prefix, fg=self.colors[record.levelname])
         if self.text_wrapper.width:
             # Only wrap text if a terminal width was detected
             msg = '\n'.join(self.text_wrapper.fill(line) for line in message.splitlines())
             # Prepend prefix after wrapping so that color codes don't affect length
-            return prefix + msg[12:]
+            return prefix + msg[11:]
         return prefix + message
 
 
@@ -91,7 +93,8 @@ class State:
         self.logger.setLevel(1)
         self.logger.propagate = False
 
-        self.stream = RichHandler()
+        self.stream = logging.StreamHandler()
+        self.stream.setFormatter(ColorFormatter())
         self.stream.setLevel(level)
         self.stream.name = 'MkDocsStreamHandler'
         self.logger.addHandler(self.stream)
@@ -103,17 +106,20 @@ class State:
 pass_state = click.make_pass_decorator(State, ensure=True)
 
 clean_help = "Remove old files from the site_dir before building (the default)."
-config_help = "Provide a specific MkDocs config"
+config_help = (
+    "Provide a specific MkDocs config. This can be a file name, or '-' to read from stdin."
+)
 dev_addr_help = "IP address and port to serve documentation locally (default: localhost:8000)"
 strict_help = "Enable strict mode. This will cause MkDocs to abort the build on any warnings."
 theme_help = "The theme to use when building your documentation."
-theme_choices = utils.get_theme_names()
+theme_choices = sorted(utils.get_theme_names())
 site_dir_help = "The directory to output the result of the documentation build."
 use_directory_urls_help = "Use directory URLs when building pages (the default)."
 reload_help = "Enable the live reloading in the development server (this is the default)"
 no_reload_help = "Disable the live reloading in the development server."
-dirty_reload_help = (
-    "Enable the live reloading in the development server, but only re-build files that have changed"
+serve_dirty_help = "Only re-build files that have changed."
+serve_clean_help = (
+    "Build the site without any effects of `mkdocs serve` - pure `mkdocs build`, then serve."
 )
 commit_message_help = (
     "A commit message to use when committing to the "
@@ -136,8 +142,10 @@ watch_theme_help = (
     "Ignored when live reload is not used."
 )
 shell_help = "Use the shell when invoking Git."
-skip_build_help = "Skip the build step. Only deploy the site directory."
 watch_help = "A directory or file to watch for live reloading. Can be supplied multiple times."
+projects_file_help = (
+    "URL or local path of the registry file that declares all known MkDocs-related projects."
+)
 
 
 def add_options(*opts):
@@ -181,12 +189,35 @@ def quiet_option(f):
     )(f)
 
 
+def color_option(f):
+    def callback(ctx, param, value):
+        state = ctx.ensure_object(State)
+        if value is False or (
+            value is None
+            and (
+                not sys.stdout.isatty()
+                or os.environ.get('NO_COLOR')
+                or os.environ.get('TERM') == 'dumb'
+            )
+        ):
+            state.stream.setFormatter(logging.Formatter('%(levelname)-8s-  %(message)s'))
+
+    return click.option(
+        '--color/--no-color',
+        is_flag=True,
+        default=None,
+        expose_value=False,
+        help="Force enable or disable color and wrapping for the output. Default is auto-detect.",
+        callback=callback,
+    )(f)
+
+
 common_options = add_options(quiet_option, verbose_option)
 common_config_options = add_options(
     click.option('-f', '--config-file', type=click.File('rb'), help=config_help),
     # Don't override config value if user did not specify --strict flag
     # Conveniently, load_config drops None values
-    click.option('-s', '--strict', is_flag=True, default=None, help=strict_help),
+    click.option('-s', '--strict/--no-strict', is_flag=True, default=None, help=strict_help),
     click.option('-t', '--theme', type=click.Choice(theme_choices), help=theme_help),
     # As with --strict, set the default to None so that this doesn't incorrectly
     # override the config file
@@ -203,7 +234,7 @@ PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}"
 PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-@click.group(context_settings={'help_option_names': ['-h', '--help']})
+@click.group(context_settings=dict(help_option_names=['-h', '--help'], max_content_width=120))
 @click.version_option(
     __version__,
     '-V',
@@ -211,29 +242,30 @@ PKG_DIR = os.path.dirname(os.path.abspath(__file__))
     message=f'%(prog)s, version %(version)s from { PKG_DIR } (Python { PYTHON_VERSION })',
 )
 @common_options
+@color_option
 def cli():
-    """
-    MkDocs - Project documentation with Markdown.
-    """
+    """MkDocs - Project documentation with Markdown."""
 
 
 @cli.command(name="serve")
 @click.option('-a', '--dev-addr', help=dev_addr_help, metavar='<IP:PORT>')
-@click.option('--livereload', 'livereload', flag_value='livereload', help=reload_help, default=True)
-@click.option('--no-livereload', 'livereload', flag_value='no-livereload', help=no_reload_help)
-@click.option('--dirtyreload', 'livereload', flag_value='dirty', help=dirty_reload_help)
+@click.option('--no-livereload', 'livereload', flag_value=False, help=no_reload_help)
+@click.option('--livereload', 'livereload', flag_value=True, default=True, hidden=True)
+@click.option('--dirtyreload', 'build_type', flag_value='dirty', hidden=True)
+@click.option('--dirty', 'build_type', flag_value='dirty', help=serve_dirty_help)
+@click.option('-c', '--clean', 'build_type', flag_value='clean', help=serve_clean_help)
 @click.option('--watch-theme', help=watch_theme_help, is_flag=True)
 @click.option(
     '-w', '--watch', help=watch_help, type=click.Path(exists=True), multiple=True, default=[]
 )
 @common_config_options
 @common_options
-def serve_command(dev_addr, livereload, watch, **kwargs):
-    """Run the builtin development server"""
+def serve_command(**kwargs):
+    """Run the builtin development server."""
     from mkdocs.commands import serve
 
     _enable_warnings()
-    serve.serve(dev_addr=dev_addr, livereload=livereload, watch=watch, **kwargs)
+    serve.serve(**kwargs)
 
 
 @cli.command(name="build")
@@ -242,16 +274,16 @@ def serve_command(dev_addr, livereload, watch, **kwargs):
 @click.option('-d', '--site-dir', type=click.Path(), help=site_dir_help)
 @common_options
 def build_command(clean, **kwargs):
-    """Build the MkDocs documentation"""
+    """Build the MkDocs documentation."""
     from mkdocs.commands import build
 
     _enable_warnings()
     cfg = config.load_config(**kwargs)
-    cfg['plugins'].run_event('startup', command='build', dirty=not clean)
+    cfg.plugins.on_startup(command='build', dirty=not clean)
     try:
         build.build(cfg, dirty=not clean)
     finally:
-        cfg['plugins'].run_event('shutdown')
+        cfg.plugins.on_shutdown()
 
 
 @cli.command(name="gh-deploy")
@@ -263,24 +295,22 @@ def build_command(clean, **kwargs):
 @click.option('--no-history', is_flag=True, help=no_history_help)
 @click.option('--ignore-version', is_flag=True, help=ignore_version_help)
 @click.option('--shell', is_flag=True, help=shell_help)
-@click.option('--skip-build', is_flag=True, help=skip_build_help)
 @common_config_options
 @click.option('-d', '--site-dir', type=click.Path(), help=site_dir_help)
 @common_options
 def gh_deploy_command(
-    clean, message, remote_branch, remote_name, force, no_history, ignore_version, shell, skip_build, **kwargs
+    clean, message, remote_branch, remote_name, force, no_history, ignore_version, shell, **kwargs
 ):
-    """Deploy your documentation to GitHub Pages"""
+    """Deploy your documentation to GitHub Pages."""
     from mkdocs.commands import build, gh_deploy
 
     _enable_warnings()
     cfg = config.load_config(remote_branch=remote_branch, remote_name=remote_name, **kwargs)
-    if not skip_build:
-        cfg['plugins'].run_event('startup', command='gh-deploy', dirty=not clean)
-        try:
-            build.build(cfg, dirty=not clean)
-        finally:
-            cfg['plugins'].run_event('shutdown')
+    cfg.plugins.on_startup(command='gh-deploy', dirty=not clean)
+    try:
+        build.build(cfg, dirty=not clean)
+    finally:
+        cfg.plugins.on_shutdown()
     gh_deploy.gh_deploy(
         cfg,
         message=message,
@@ -291,11 +321,35 @@ def gh_deploy_command(
     )
 
 
+@cli.command(name="get-deps")
+@verbose_option
+@click.option('-f', '--config-file', type=click.File('rb'), help=config_help)
+@click.option(
+    '-p',
+    '--projects-file',
+    default='https://raw.githubusercontent.com/mkdocs/catalog/main/projects.yaml',
+    help=projects_file_help,
+    show_default=True,
+)
+def get_deps_command(config_file, projects_file):
+    """Show required PyPI packages inferred from plugins in mkdocs.yml."""
+    from mkdocs.commands import get_deps
+
+    warning_counter = utils.CountHandler()
+    warning_counter.setLevel(logging.WARNING)
+    logging.getLogger('mkdocs').addHandler(warning_counter)
+
+    get_deps.get_deps(projects_file_url=projects_file, config_file_path=config_file)
+
+    if warning_counter.get_counts():
+        sys.exit(1)
+
+
 @cli.command(name="new")
 @click.argument("project_directory")
 @common_options
 def new_command(project_directory):
-    """Create a new MkDocs project"""
+    """Create a new MkDocs project."""
     from mkdocs.commands import new
 
     new.new(project_directory)

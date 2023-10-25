@@ -18,21 +18,21 @@ need to include either CSS or JavaScript files within your [documentation
 directory].
 
 For example, to change the color of the headers in your documentation, create
-a file called `extra.css` and place it next to the documentation Markdown. In
+a file called (for example) `style.css` and place it next to the documentation Markdown. In
 that file add the following CSS.
 
-```CSS
+```css
 h1 {
   color: red;
 }
 ```
 
-> NOTE:
-> If you are deploying your documentation with [ReadTheDocs]. You will need
-> to explicitly list the CSS and JavaScript files you want to include in
-> your config. To do this, add the following to your mkdocs.yml.
->
->     extra_css: [extra.css]
+Then you need to add it to `mkdocs.yml`:
+
+```yaml
+extra_css:
+  - style.css
+```
 
 After making these changes, they should be visible when you run
 `mkdocs serve` - if you already had this running, you should see that the CSS
@@ -92,8 +92,8 @@ And then point your `mkdocs.yml` configuration file at the new directory:
 
 ```yaml
 theme:
-    name: mkdocs
-    custom_dir: custom_theme/
+  name: mkdocs
+  custom_dir: custom_theme/
 ```
 
 To override the 404 error page ("file not found"), add a new template file named
@@ -216,12 +216,11 @@ any additional CSS files included in the `custom_dir`.
 [extra_css]: ./configuration.md#extra_css
 [extra_javascript]: ./configuration.md#extra_javascript
 [documentation directory]: ./configuration.md#docs_dir
-[ReadTheDocs]: ./deploying-your-docs.md#readthedocs
 [custom_dir]: ./configuration.md#custom_dir
 [name]: ./configuration.md#name
 [mkdocs]: ./choosing-your-theme.md#mkdocs
 [browse source]: https://github.com/mkdocs/mkdocs/tree/master/mkdocs/themes/mkdocs
 [Template Variables]: ../dev-guide/themes.md#template-variables
-[Jinja documentation]: http://jinja.pocoo.org/docs/dev/templates/#template-inheritance
-[super block]: http://jinja.pocoo.org/docs/dev/templates/#super-blocks
+[Jinja documentation]: https://jinja.palletsprojects.com/en/latest/templates/#template-inheritance
+[super block]: https://jinja.palletsprojects.com/en/latest/templates/#super-blocks
 [base_url]: ../dev-guide/themes.md#base_url

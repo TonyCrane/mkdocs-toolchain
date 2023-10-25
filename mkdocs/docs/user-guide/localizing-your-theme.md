@@ -31,8 +31,8 @@ underscore. For example, some possible locales for English might include `en`,
 For a list of locales supported by the theme you are using, see that theme's
 documentation.
 
-- [mkdocs]
-- [readthedocs]
+- [mkdocs](choosing-your-theme.md#mkdocs-locale)
+- [readthedocs](choosing-your-theme.md#readthedocs-locale)
 
 WARNING:
 If you configure a language locale which is not yet supported by the theme
@@ -47,9 +47,9 @@ For example, to build the `mkdocs` theme in French you would use the following
 in your `mkdocs.yml` configuration file:
 
 ```yaml
- theme:
-     name: mkdocs
-     locale: fr
+theme:
+  name: mkdocs
+  locale: fr
 ```
 
 ## Contributing theme translations
@@ -58,8 +58,6 @@ If a theme has not yet been translated into your language, feel free to
 contribute a translation using the [Translation Guide].
 
 [Translation Guide]: ../dev-guide/translations.md
-[mkdocs]: choosing-your-theme.md#mkdocs-locale
-[readthedocs]: choosing-your-theme.md#readthedocs-locale
 [locale]: configuration.md#locale
 [theme]: configuration.md#theme
 [ISO-639-1]: https://en.wikipedia.org/wiki/ISO_639-1
