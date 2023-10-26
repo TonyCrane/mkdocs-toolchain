@@ -15,6 +15,7 @@
 
 - mkdocs-linkbackward-plugin: 为了链接兼容性创建跳转页面
 - mkdocs-tikzautomata-plugin: 在 markdown 中直接编写 tikz 并嵌入 svg，修改自 [FrightenedFoxCN/mkdocs-mathenv-plugin](https://github.com/FrightenedFoxCN/mkdocs-mathenv-plugin/)
+- mkdocs-toc-plugin: 从页面内嵌 yml 生成 toc（带字数统计/更新时间）
 
 ## 各包原始 commit sha
 
