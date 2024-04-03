@@ -10,7 +10,7 @@ class TikZAutomataRenderer:
         self.contents = contents
 
     def write_to_svg(self, cachefile: bool) -> str:
-        filename = sha256(self.contents.encode()).hexdigest()
+        filename = sha256(self.contents.encode() + (self.options.encode() if self.options else b"")).hexdigest()
 
         if cachefile == True:
             try:
