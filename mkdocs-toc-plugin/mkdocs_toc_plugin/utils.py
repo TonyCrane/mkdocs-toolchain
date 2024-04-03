@@ -74,7 +74,22 @@ def _get_repo(path: str) -> Git:
         
     return _repo_cache[path]
 
-def get_latest_commit_timestamp(path: str) -> int:
+def _check_ignore(sha: str, path: str, ignore_commits: list[str]) -> bool:
+    """
+    Check if the commit should be ignored.
+    """
+    for ignore in ignore_commits:
+        if isinstance(ignore, str):
+            if sha.startswith(ignore):
+                return True
+        else: # dict
+            filename = list(ignore.keys())[0]
+            if path.endswith(filename):
+                if sha.startswith(ignore[filename]):
+                    return True
+    return False
+
+def get_latest_commit_timestamp(path: str, ignore_commits: list[str]) -> int:
     """
     Get the timestamp of the latest commit of the path.
 
@@ -84,14 +99,24 @@ def get_latest_commit_timestamp(path: str) -> int:
     realpath = os.path.realpath(path)
     repo = _get_repo(realpath)
 
-    commit_timestamp = repo.log(realpath, format="%at", n=1)
+    if ignore_commits:
+        commits = repo.log(realpath, format="%H %at")
+        commit_timestamp = ""
+        for commit in commits.splitlines():
+            sha, timestamp = commit.split()
+            if _check_ignore(sha, path, ignore_commits):
+                continue
+            commit_timestamp = timestamp
+            break
+    else:
+        commit_timestamp = repo.log(realpath, format="%at", n=1)
 
     if commit_timestamp == "":
         commit_timestamp = time.time()
 
     return int(commit_timestamp)
 
-def get_update_time(path, base):
+def get_update_time(path, base, ignore_commits):
     path = os.path.join(base, path)
     if os.path.exists(path):
         time = 0
@@ -101,7 +126,7 @@ def get_update_time(path, base):
                     continue
                 if file.endswith(".md"):
                     file = os.path.join(root, file)
-                    time = max(time, get_latest_commit_timestamp(file))
+                    time = max(time, get_latest_commit_timestamp(file, ignore_commits))
         return time
     else:
         if path.endswith("/"):
@@ -109,5 +134,5 @@ def get_update_time(path, base):
         else:
             file = path + ".md"
         if os.path.exists(file):
-            return get_latest_commit_timestamp(file)
+            return get_latest_commit_timestamp(file, ignore_commits)
     return 0

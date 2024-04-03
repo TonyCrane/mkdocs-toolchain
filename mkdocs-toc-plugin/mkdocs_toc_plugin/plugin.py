@@ -23,6 +23,7 @@ with open(TEMPLATE_DIR, "r", encoding="utf-8") as file:
 class TocPlugin(BasePlugin):
     config_scheme = (
         ("enabled", config_options.Type(bool, default=True)),
+        ("ignore_commits", config_options.Type(list, default=[])),
     )
 
     enabled = True
@@ -108,7 +109,7 @@ class TocPlugin(BasePlugin):
                 detail['title'] = t
                 detail['link'] = value
                 detail['words'], detail['codes'], detail['read_time'] = get_statistics(value, base)
-                detail['update_time'] = get_update_time(value, base)
+                detail['update_time'] = get_update_time(value, base, self.config.get("ignore_commits", []))
                 if "🔒" in t:
                     detail['lock'] = True
                 details.append(detail)
