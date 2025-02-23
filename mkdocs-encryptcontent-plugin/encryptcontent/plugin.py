@@ -372,8 +372,7 @@ class encryptContentPlugin(BasePlugin):
                         cipher_bundle = self.__encrypt_text_aes__(merge_item, str(page.password))
                         encrypted_content = b';'.join(cipher_bundle).decode('ascii')
                         # Replace initial content with encrypted one
-                        bs4_encrypted_content = BeautifulSoup(encrypted_content, 'html.parser')
-                        item.contents = [bs4_encrypted_content]
+                        item.string = encrypted_content
                         if item.has_attr('style'):
                             if isinstance(item['style'], list):
                                 item['style'].append("display:none")
@@ -393,5 +392,5 @@ class encryptContentPlugin(BasePlugin):
         """
         Path(config.data["site_dir"] + '/assets/javascripts/').mkdir(parents=True, exist_ok=True)
         decrypt_js_path = Path(config.data["site_dir"] + '/assets/javascripts/decrypt-contents.js')
-        with open(decrypt_js_path, "w") as file:
+        with open(decrypt_js_path, "w", encoding="utf-8") as file:
             file.write(self.__generate_decrypt_js__())
