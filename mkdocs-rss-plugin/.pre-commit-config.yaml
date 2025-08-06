@@ -1,64 +1,77 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
-exclude: "node_modules|migrations|.venv|.direnv|tests/dev/|tests/fixtures/"
+exclude: ".venv|.direnv|tests/dev/|tests/fixtures/"
 fail_fast: false
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
-        args: ["--maxkb=500"]
+        args:
+          - --maxkb=500
       - id: check-ast
       - id: check-builtin-literals
       - id: check-case-conflict
       - id: check-json
       - id: check-toml
       - id: check-yaml
+        args:
+          - --unsafe
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
       - id: fix-encoding-pragma
-        args: [--remove]
+        args:
+          - --remove
       - id: trailing-whitespace
-        args: [--markdown-linebreak-ext=md]
+        args:
+          - --markdown-linebreak-ext=md
 
   - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.10.0 # Use the ref you want to point at
+    rev: v1.10.0
     hooks:
       - id: python-use-type-annotations
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.14.0
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args:
-          - "--py38-plus"
+          - "--py39-plus"
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.0.292"
+    rev: "v0.11.8"
     hooks:
       - id: ruff
-        args: ["--fix-only"]
+        args:
+          - --fix-only
+          - --target-version=py39
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 6.0.1
     hooks:
       - id: isort
-        args: ["--profile", "black", "--filter-files"]
+        args:
+          - --profile
+          - black
+          - --filter-files
 
   - repo: https://github.com/psf/black
-    rev: 23.9.1
+    rev: 25.1.0
     hooks:
       - id: black
+        args:
+          - --target-version=py39
 
   - repo: https://github.com/pycqa/flake8
-    rev: 6.1.0
+    rev: 7.2.0
     hooks:
       - id: flake8
+        additional_dependencies:
+          - flake8-docstrings<2
         language: python
-        files: ^mkdocs_rss_plugin/.*\.py$
-        types: [python]
-        args: ["--config=setup.cfg", "--select=E9,F63,F7,F82"]
+        args:
+          - --config=setup.cfg
+          - --select=E9,F63,F7,F82
+          - --docstring-convention=google
 
 ci:
   autofix_prs: true

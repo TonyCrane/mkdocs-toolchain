@@ -22,7 +22,7 @@
 - mkdocs: [`1.6.1`](https://github.com/mkdocs/mkdocs/tree/1.6.1) ~~(old: [`730da08`](https://github.com/mkdocs/mkdocs/tree/730da08158b05374c4230f9785dd7f5068801fe3) -> [`3e0949a`](https://github.com/mkdocs/mkdocs/commit/3e0949a332ee2d4e3b0256869a9c448b03ea944d))~~
 - mkdocs-encryptcontent-plugin: [`c28e4ce359cc3e69e097db8eba3fb77ab683b40d`](https://github.com/CoinK0in/mkdocs-encryptcontent-plugin/tree/c28e4ce359cc3e69e097db8eba3fb77ab683b40d)
 - mkdocs-git-revision-date-localized-plugin: [`9cfce40942c83dd15834fb879caa4171a426ecdd`](https://github.com/timvink/mkdocs-git-revision-date-localized-plugin/tree/9cfce40942c83dd15834fb879caa4171a426ecdd)
-- mkdocs-rss-plugin: [`89e9cfa8262e9b40f571d554a75a2e9929264efc`](https://github.com/Guts/mkdocs-rss-plugin/commit/89e9cfa8262e9b40f571d554a75a2e9929264efc) ~~(old: [`07975d6f4c27759d3bc7845427ac05fe49afd9c1`](https://github.com/Guts/mkdocs-rss-plugin/tree/07975d6f4c27759d3bc7845427ac05fe49afd9c1))~~
+- mkdocs-rss-plugin: [`1.17.3`](https://github.com/Guts/mkdocs-rss-plugin/tree/1.17.3) ~~(old: [`07975d6`](https://github.com/Guts/mkdocs-rss-plugin/tree/07975d6f4c27759d3bc7845427ac05fe49afd9c1) -> [`89e9cfa`](https://github.com/Guts/mkdocs-rss-plugin/commit/89e9cfa8262e9b40f571d554a75a2e9929264efc))~~
 - mkdocs-material: 不在此 repo 中，直接使用 8.1.4 版本（mkdocs-material-extensions 1.1）
 - mkdocs-glightbox: 不在此 repo 中，直接使用 0.3.4 版本
 

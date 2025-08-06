@@ -5,19 +5,26 @@ name: "📚 Documentation"
 # events but only for the master branch
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - "docs/**"
       - "*.md"
       - ".github/workflows/documentation.yml"
+      - ./mkdocs_rss_plugin
+      - requirements/documentation.txt
     tags:
       - "*"
 
   pull_request:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - ".github/workflows/documentation.yml"
+      - .github/workflows/documentation.yml
+      - docs/
       - requirements/documentation.txt
+
+  workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -45,7 +52,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
@@ -58,10 +65,17 @@ jobs:
           python -m pip install --upgrade -r requirements/documentation.txt
 
       - name: Build static website
+        env:
+          MKDOCS_ENABLE_PLUGIN_GIT_COMMITTERS: true
+          MKDOCS_ENABLE_PLUGIN_GIT_DATES: true
+          MKDOCS_ENABLE_PLUGIN_MKDOCSTRINGS: true
+          MKDOCS_ENABLE_PLUGIN_PRIVACY: true
+          MKDOCS_ENABLE_PLUGIN_RSS: true
+          MKDOCS_ENABLE_PLUGIN_SOCIAL: true
         run: mkdocs build --verbose
 
       - name: Save build doc as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: documentation
           path: site/
@@ -69,11 +83,11 @@ jobs:
           retention-days: 30
 
       - name: Setup Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v5
         if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
         with:
           # Upload entire repository
@@ -82,4 +96,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4

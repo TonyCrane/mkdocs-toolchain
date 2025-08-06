@@ -5,23 +5,28 @@ name: "🐍 Lint and Test"
 # events but only for the master branch
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
     paths-ignore:
       - "docs/**"
   push:
-    branches: [main]
+    branches:
+      - main
     paths-ignore:
       - "docs/**"
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   lintest:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -29,7 +34,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
@@ -40,6 +45,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade -r requirements.txt
           python -m pip install --upgrade -r requirements/development.txt
+          python -m pip install --upgrade -r requirements/testing.txt
 
       - name: Lint with flake8
         run: |
@@ -55,4 +61,11 @@ jobs:
         run: python -m pytest
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3.1.4
+        uses: codecov/codecov-action@v5.4.2
+        with:
+          env_vars: PYTHON
+          flags: unittests
+          name: Code Coverage for unittests on python-${{ matrix.python-version }}]
+        env:
+          PYTHON: ${{ matrix.python-version }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

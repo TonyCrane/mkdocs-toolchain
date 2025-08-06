@@ -20,7 +20,8 @@ from mkdocs.__main__ import build_command
 from mkdocs.config import load_config
 from mkdocs.config.base import Config
 
-logger = logging.getLogger("mkdocs.mkdocs_rss_plugin")
+# package
+from mkdocs_rss_plugin.plugin import GitRssPlugin
 
 # #############################################################################
 # ########## Classes ###############
@@ -44,22 +45,30 @@ class BaseTest(unittest.TestCase):
         not enabled into the mkdocs.yml.
         :rtype: Config
         """
-        # instanciate plugin
+        # instantiate plugin
         cfg_mkdocs = load_config(str(mkdocs_yml_filepath.resolve()))
 
-        plugins = cfg_mkdocs.get("plugins")
-        if "rss" not in plugins:
-            logger.warning(
+        plugins = cfg_mkdocs.plugins
+        rss_plugin_instances = [
+            plg for plg in plugins.items() if isinstance(plg[1], GitRssPlugin)
+        ]
+        if not len(rss_plugin_instances):
+            logging.warning(
                 f"Plugin {plugin_name} is not part of enabled plugin in the MkDocs "
                 "configuration file: {mkdocs_yml_filepath}"
             )
-            return {}
-        plugin_loaded = plugins.get("rss")
+            return cfg_mkdocs
 
-        cfg = plugin_loaded.on_config(cfg_mkdocs)
-        logger.info("Fixture configuration loaded: " + str(cfg))
+        if len(rss_plugin_instances) == 1:
+            plugin = rss_plugin_instances[0][1]
+            self.assertIsInstance(plugin, GitRssPlugin)
+        elif len(rss_plugin_instances) >= 1:
+            plugin = rss_plugin_instances[1][1]
+            self.assertIsInstance(plugin, GitRssPlugin)
 
-        return plugin_loaded.config
+        logging.info(f"Fixture configuration loaded: {plugin.on_config(cfg_mkdocs)}")
+
+        return plugin.config
 
     def build_docs_setup(
         self,
@@ -98,7 +107,7 @@ class BaseTest(unittest.TestCase):
             run = runner.invoke(build_command, cmd_args)
             return run
         except Exception as err:
-            logger.critical(err)
+            logging.critical(err)
             return False
 
     def setup_clean_mkdocs_folder(
@@ -122,7 +131,7 @@ class BaseTest(unittest.TestCase):
 
         # Create empty 'testproject' folder
         if testproject_path.exists():
-            logger.warning(
+            logging.warning(
                 """This command does not work on windows.
             Refactor your test to use setup_clean_mkdocs_folder() only once"""
             )

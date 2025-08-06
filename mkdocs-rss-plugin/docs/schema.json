@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "title": "RSS feeds (i.e. a channel of items) using git log and page metadata.",
+  "title": "RSS and JSON feeds (i.e. a channel of items) using git log and page metadata.",
+  "description": "Support multiple instances in a single Mkdocs website.",
   "oneOf": [
     {
       "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/",
@@ -17,14 +18,20 @@
           "properties": {
             "abstract_chars_count": {
               "title": "Number of characters to use as item description if it's not present within the page metadata. If this value is set to -1, then the articles' full HTML content will be filled into the description element.",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#feed-length",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#abstract_chars_count-item-description-length",
               "type": "integer",
               "default": 160,
               "minimum": -1
             },
+            "abstract_delimiter": {
+              "title": "String to mark where the description ends. Also called excerpt.",
+              "default": "<!-- more -->",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#abstract_delimiter",
+              "type": "string"
+            },
             "categories": {
               "title": "List of page metadata keys to use as item categories.",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#item-categories",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#categories",
               "type": "array",
               "default": null,
               "items": {
@@ -35,14 +42,14 @@
             },
             "comments_path": {
               "title": "Part of URL to the items' comment div.",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#item-comments-path",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#comments_path",
               "type": "string",
               "default": null,
               "format": "uri-reference"
             },
             "date_from_meta": {
               "title": "Use date from page metadata instead of git log.",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#dates-overriding",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#date_from_meta-override-dates-from-git-log-with-pagemeta",
               "type": "object",
               "default": null,
               "properties": {
@@ -54,7 +61,6 @@
                 },
                 "as_update": {
                   "type": [
-                    "boolean",
                     "string"
                   ]
                 },
@@ -88,45 +94,93 @@
             },
             "enabled": {
               "title": "Enable/Disable plugin",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#disabling-the-plugin",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#enabled-enablingdisabling-the-plugin",
               "type": "boolean",
               "default": true
             },
             "feed_ttl": {
               "title": "Number of pages to include as feed items (entries).",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#feed-length",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#feed_ttl-feeds-cache-time",
               "type": "integer",
               "default": 1440
             },
+            "feeds_filenames": {
+              "title": "Customize output RSS and JSON feeds names.",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#feeds_filenames",
+              "type": "object",
+              "properties": {
+                "json_created": {
+                  "default": "feed_json_created.json",
+                  "type": "string"
+                },
+                "json_updated": {
+                  "default": "feed_json_updated.json",
+                  "type": "string"
+                },
+                "rss_created": {
+                  "default": "feed_rss_created.xml",
+                  "type": "string"
+                },
+                "rss_updated": {
+                  "default": "feed_rss_updated.xml",
+                  "type": "string"
+                }
+              }
+            },
             "image": {
               "title": "Feed channel illustration",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#channel-image",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#image-set-the-channel-image",
               "type": "string",
               "default": null
             },
+            "json_feed_enabled": {
+              "title": "Enable/Disable export to JSON Feed.",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#json_feed_enabled-enablingdisabling-export-to-json-feed",
+              "type": "boolean",
+              "default": true
+            },
             "length": {
               "title": "Number of pages to include as feed items (entries).",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#feed-length",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#length-number-of-items-to-include-in-feed",
               "type": "integer",
               "default": 20
             },
             "match_path": {
               "title": "Regex match pattern to filter pages.",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#filter-pages",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#match_path-filter-pages-to-include-in-feed",
               "type": "string",
               "default": ".*"
             },
             "pretty_print": {
               "title": "Minify/Prettify output",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#prettified-output",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#pretty_print-prettified-xml",
               "type": "boolean",
               "default": false
             },
+            "rss_feed_enabled": {
+              "title": "Enable/Disable export to RSS.",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#enabled-enablingdisabling-the-plugin",
+              "type": "boolean",
+              "default": true
+            },
             "url_parameters": {
               "title": "URL parameters to include in the item URL.",
-              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#url-parameters",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#url_parameters-additional-url-parameters",
               "type": "object",
               "default": null
+            },
+            "use_git": {
+              "title": "Enable/Disable git use.",
+              "description": "Disable it if you want to use only page.meta values.",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#use_git-enabledisable-git-log",
+              "type": "boolean",
+              "default": true
+            },
+            "use_material_social_cards": {
+              "title": "Enable/Disable integration with Social Cards plugin from Material theme.",
+              "markdownDescription": "https://guts.github.io/mkdocs-rss-plugin/configuration/#disabling-the-plugin",
+              "type": "boolean",
+              "default": true
             }
           },
           "additionalProperties": false

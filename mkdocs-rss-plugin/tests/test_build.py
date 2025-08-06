@@ -2,10 +2,10 @@
 
 """Usage from the repo root folder:
 
-    .. code-block:: python
+.. code-block:: python
 
-        # for whole test
-        python -m unittest tests.test_build
+    # for whole test
+    python -m unittest tests.test_build
 
 """
 
@@ -14,22 +14,28 @@
 # ##################################
 
 # Standard library
+import json
+import logging
 import tempfile
 import unittest
-
-# logging
-from logging import DEBUG, getLogger
 from pathlib import Path
 from traceback import format_exception
 
 # 3rd party
 import feedparser
+import jsonfeed
 
 # test suite
 from tests.base import BaseTest
 
-logger = getLogger(__name__)
-logger.setLevel(DEBUG)
+# -- Globals --
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+OUTPUT_RSS_FEED_CREATED = "feed_rss_created.xml"
+OUTPUT_RSS_FEED_UPDATED = "feed_rss_updated.xml"
+OUTPUT_JSON_FEED_CREATED = "feed_json_created.json"
+OUTPUT_JSON_FEED_UPDATED = "feed_json_updated.json"
 
 # #############################################################################
 # ########## Classes ###############
@@ -100,7 +106,7 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             for feed_item in feed_parsed.entries:
                 # mandatory properties
                 self.assertTrue("description" in feed_item)
@@ -134,7 +140,7 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             for feed_item in feed_parsed.entries:
                 # mandatory properties
                 self.assertTrue("description" in feed_item)
@@ -172,6 +178,73 @@ class TestBuildRss(BaseTest):
             self.assertEqual(cli_result.exit_code, 0)
             self.assertIsNone(cli_result.exception)
 
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_RSS_FEED_CREATED).exists()
+            )
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_RSS_FEED_UPDATED).exists()
+            )
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_JSON_FEED_CREATED).exists()
+            )
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_JSON_FEED_UPDATED).exists()
+            )
+
+    def test_simple_build_rss_enabled_not_jsonfeed(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_rss_enabled_not_jsonfeed.yml"
+                ),
+                output_path=tmpdirname,
+            )
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            self.assertTrue(Path(tmpdirname).joinpath(OUTPUT_RSS_FEED_CREATED).exists())
+            self.assertTrue(Path(tmpdirname).joinpath(OUTPUT_RSS_FEED_UPDATED).exists())
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_JSON_FEED_CREATED).exists()
+            )
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_JSON_FEED_UPDATED).exists()
+            )
+
+    def test_simple_build_jsonfeed_enabled_not_rss(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_jsonfeed_enabled_not_rss.yml"
+                ),
+                output_path=tmpdirname,
+            )
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_RSS_FEED_CREATED).exists()
+            )
+            self.assertFalse(
+                Path(tmpdirname).joinpath(OUTPUT_RSS_FEED_UPDATED).exists()
+            )
+            self.assertTrue(
+                Path(tmpdirname).joinpath(OUTPUT_JSON_FEED_CREATED).exists()
+            )
+            self.assertTrue(
+                Path(tmpdirname).joinpath(OUTPUT_JSON_FEED_UPDATED).exists()
+            )
+
     def test_simple_build_item_dates(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
             cli_result = self.build_docs_setup(
@@ -203,11 +276,11 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             self.assertEqual(len(feed_parsed.entries), 3)
 
             # updated items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_updated.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED)
             self.assertEqual(len(feed_parsed.entries), 3)
 
     def test_simple_build_feed_ttl(self):
@@ -225,12 +298,12 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             self.assertNotEqual(feed_parsed.feed.ttl, "1440")
             self.assertEqual(feed_parsed.feed.ttl, "90")
 
             # updated items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_updated.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED)
             self.assertNotEqual(feed_parsed.feed.ttl, "1440")
             self.assertEqual(feed_parsed.feed.ttl, "90")
 
@@ -250,7 +323,7 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
 
             for feed_item in feed_parsed.entries:
                 if feed_item.title in ("Test page with meta",):
@@ -272,7 +345,7 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             self.assertEqual(feed_parsed.bozo, 0)
 
             for feed_item in feed_parsed.entries:
@@ -294,7 +367,7 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             self.assertEqual(feed_parsed.bozo, 0)
 
             for feed_item in feed_parsed.entries:
@@ -318,24 +391,75 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             self.assertEqual(feed_parsed.bozo, 0)
 
             for feed_item in feed_parsed.entries:
                 if feed_item.title not in (
                     "Page without meta with short text",
                     "Blog sample",
+                    "Blog",
                 ):
-                    self.assertGreaterEqual(
-                        len(feed_item.description), 150, feed_item.title
+                    self.assertGreater(
+                        len(feed_item.description),
+                        150,
+                        f"Failed item title: {feed_item.title}",
                     )
 
-    def test_simple_build_lang_with_territory(self):
+    def test_simple_build_item_delimiter(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path("tests/fixtures/mkdocs_minimal.yml"),
+                output_path=tmpdirname,
+                strict=True,
+            )
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
+            self.assertEqual(feed_parsed.bozo, 0)
+
+            for feed_item in feed_parsed.entries:
+                if feed_item.title in ("Page without meta with early delimiter",):
+                    self.assertLess(len(feed_item.description), 50, feed_item.title)
+
+    def test_simple_build_item_delimiter_empty(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
             cli_result = self.build_docs_setup(
                 testproject_path="docs",
                 mkdocs_yml_filepath=Path(
-                    "tests/fixtures/mkdocs_lang_with_territory.yml"
+                    "tests/fixtures/mkdocs_item_delimiter_empty.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
+            self.assertEqual(feed_parsed.bozo, 0)
+
+            for feed_item in feed_parsed.entries:
+                if feed_item.title in ("Page without meta with early delimiter",):
+                    self.assertGreater(len(feed_item.description), 150, feed_item.title)
+
+    def test_simple_build_locale_with_territory(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_locale_with_territory.yml"
                 ),
                 output_path=tmpdirname,
                 strict=True,
@@ -349,12 +473,146 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             self.assertEqual(feed_parsed.feed.get("language"), "en-US")
 
             # updated items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_updated.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED)
             self.assertEqual(feed_parsed.feed.get("language"), "en-US")
+
+    def test_simple_build_locale_without_territory(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_locale_without_territory.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
+            self.assertEqual(feed_parsed.feed.get("language"), "fr")
+
+            # updated items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED)
+            self.assertEqual(feed_parsed.feed.get("language"), "fr")
+
+    def test_simple_build_language_specific_material(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_language_specific_material.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
+            self.assertEqual(feed_parsed.feed.get("language"), "fr")
+
+            # updated items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED)
+            self.assertEqual(feed_parsed.feed.get("language"), "fr")
+
+    def test_simple_build_custom_output_basename(self):
+        config = self.get_plugin_config_from_mkdocs(
+            mkdocs_yml_filepath=Path(
+                "tests/fixtures/mkdocs_custom_feeds_filenames.yml"
+            ),
+            plugin_name="rss",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_custom_feeds_filenames.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(
+                Path(tmpdirname) / config.feeds_filenames.rss_created
+            )
+            self.assertEqual(feed_parsed.bozo, 0)
+
+            # updated items
+            feed_parsed = feedparser.parse(
+                Path(tmpdirname) / config.feeds_filenames.rss_updated
+            )
+            self.assertEqual(feed_parsed.bozo, 0)
+
+    def test_simple_build_multiple_instances(self):
+        config = self.get_plugin_config_from_mkdocs(
+            mkdocs_yml_filepath=Path("tests/fixtures/mkdocs_multiple_instances.yml"),
+            plugin_name="rss",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_multiple_instances.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(
+                Path(tmpdirname) / config.feeds_filenames.rss_created
+            )
+            self.assertEqual(feed_parsed.bozo, 0)
+
+            # updated items
+            feed_parsed = feedparser.parse(
+                Path(tmpdirname) / config.feeds_filenames.rss_updated
+            )
+            self.assertEqual(feed_parsed.bozo, 0)
+
+            # created items - blog
+            feed_parsed = feedparser.parse(Path(tmpdirname).joinpath("blog.xml"))
+            self.assertEqual(feed_parsed.bozo, 0)
+
+            # updated items - blog
+            feed_parsed = feedparser.parse(
+                Path(tmpdirname).joinpath("blog-updated.xml")
+            )
+            self.assertEqual(feed_parsed.bozo, 0)
 
     def test_simple_build_pretty_print_enabled(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -373,11 +631,11 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            with Path(Path(tmpdirname) / "feed_rss_created.xml").open("r") as f:
+            with Path(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED).open("r") as f:
                 self.assertGreater(len(f.readlines()), 0)
 
             # updated items
-            with Path(Path(tmpdirname) / "feed_rss_updated.xml").open("r") as f:
+            with Path(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED).open("r") as f:
                 self.assertGreater(len(f.readlines()), 0)
 
     def test_simple_build_pretty_print_disabled(self):
@@ -397,12 +655,68 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            with Path(Path(tmpdirname) / "feed_rss_created.xml").open("r") as f:
+            with Path(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED).open("r") as f:
                 self.assertEqual(len(f.readlines()), 1)
 
             # updated items
-            with Path(Path(tmpdirname) / "feed_rss_updated.xml").open("r") as f:
+            with Path(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED).open("r") as f:
                 self.assertEqual(len(f.readlines()), 1)
+
+    def test_simple_build_custom_title_description(self):
+        """Test simple build with custom description and title."""
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_custom_title_description.yml"
+                ),
+                output_path=tmpdirname,
+            )
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
+            self.assertEqual(feed_parsed.feed.title, "My custom RSS title")
+            self.assertEqual(feed_parsed.feed.description, "My custom RSS description")
+
+    def test_simple_build_override_per_page_rss_feed_description(self):
+        """
+        Test per-page rss.feed_description overrides the config  site_description and rss.feed_description
+
+        How to run this test:
+            pytest tests/test_build.py::TestBuildRss::test_simple_build_override_per_page_rss_feed_description
+        """
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_custom_title_description.yml"
+                ),
+                output_path=tmpdirname,
+            )
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
+            for feed_item in feed_parsed.entries:
+                if feed_item.title == "Page with overridden rss feed description":
+                    self.assertEqual(
+                        feed_item.description,
+                        "This is a custom override of the feed description",
+                    )
+                    break
+            else:
+                self.fail("Page with overridden rss feed description not found")
 
     def test_rss_feed_validation(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -420,15 +734,48 @@ class TestBuildRss(BaseTest):
             self.assertIsNone(cli_result.exception)
 
             # created items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_created.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED)
             self.assertEqual(feed_parsed.bozo, 0)
 
             # updated items
-            feed_parsed = feedparser.parse(Path(tmpdirname) / "feed_rss_updated.xml")
+            feed_parsed = feedparser.parse(Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED)
             self.assertEqual(feed_parsed.bozo, 0)
 
             # some feed characteristics
             self.assertEqual(feed_parsed.version, "rss20")
+
+    def test_json_feed_validation(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path("tests/fixtures/mkdocs_complete.yml"),
+                output_path=tmpdirname,
+            )
+
+            if cli_result.exception is not None:
+                e = cli_result.exception
+                logger.debug(format_exception(type(e), e, e.__traceback__))
+
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            # created items
+            with (
+                Path(tmpdirname)
+                .joinpath(OUTPUT_JSON_FEED_CREATED)
+                .open("r", encoding="UTF-8") as in_json
+            ):
+                json_feed_created_data = json.load(in_json)
+            jsonfeed.Feed.parse(json_feed_created_data)
+
+            # updated items
+            with (
+                Path(tmpdirname)
+                .joinpath(OUTPUT_JSON_FEED_UPDATED)
+                .open("r", encoding="UTF-8") as in_json
+            ):
+                json_feed_updated_data = json.load(in_json)
+            jsonfeed.Feed.parse(json_feed_updated_data)
 
     def test_config_no_site_url(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -457,6 +804,35 @@ class TestBuildRss(BaseTest):
             # cli should returns an error code (1)
             self.assertEqual(cli_result.exit_code, 1)
             self.assertIsNotNone(cli_result.exception)
+
+    def test_date(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cli_result = self.build_docs_setup(
+                testproject_path="docs",
+                mkdocs_yml_filepath=Path(
+                    "tests/fixtures/mkdocs_dates_overridden_in_dot_key.yml"
+                ),
+                output_path=tmpdirname,
+                strict=True,
+            )
+            self.assertEqual(cli_result.exit_code, 0)
+            self.assertIsNone(cli_result.exception)
+
+            feed_rss_created = feedparser.parse(
+                Path(tmpdirname) / OUTPUT_RSS_FEED_CREATED
+            )
+            for page in feed_rss_created.entries:
+                if page.title == "Page with meta date in dot key":
+                    self.assertEqual(page.published, "Sat, 07 Oct 2023 10:20:00 +0000")
+                    break
+
+            feed_rss_updated = feedparser.parse(
+                Path(tmpdirname) / OUTPUT_RSS_FEED_UPDATED
+            )
+            for page in feed_rss_updated.entries:
+                if page.title == "Page with meta date in dot key":
+                    self.assertEqual(page.published, "Sun, 08 Oct 2023 10:20:00 +0000")
+                    break
 
     def test_bad_date_format(self):
         # add a new page without tracking it
