@@ -8,8 +8,8 @@ A basic guide to deploying your docs to various hosting providers
 
 If you host the source code for a project on [GitHub], you can easily use
 [GitHub Pages] to host the documentation for your project. There are two basic
-types of GitHub Pages sites: [Project Pages] sites, and [User and Organization
-Pages] sites. They are nearly identical but have some important differences,
+[types of GitHub Pages sites]: Project Pages sites, and User and Organization
+Pages sites. They are nearly identical but have some important differences,
 which require a different work flow when deploying.
 
 ### Project Pages
@@ -95,8 +95,7 @@ documentation on [Troubleshooting custom domains].
 
 [GitHub]: https://github.com/
 [GitHub Pages]: https://pages.github.com/
-[Project Pages]: https://help.github.com/articles/user-organization-and-project-pages/#project-pages-sites
-[User and Organization Pages]: https://help.github.com/articles/user-organization-and-project-pages/#user-and-organization-pages-sites
+[types of GitHub Pages sites]: https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#types-of-github-pages-sites
 [ghp-import]: https://github.com/davisp/ghp-import
 [remote_branch]: ./configuration.md#remote_branch
 [Custom Domain]: https://help.github.com/articles/adding-or-removing-a-custom-domain-for-your-github-pages-site
@@ -107,23 +106,14 @@ documentation on [Troubleshooting custom domains].
 ## Read the Docs
 
 [Read the Docs][rtd] offers free documentation hosting. You can import your docs
-using any major version control system, including Mercurial, Git, Subversion,
-and Bazaar. Read the Docs supports MkDocs out-of-the-box. Follow the
-[instructions] on their site to arrange the files in your repository properly,
+using the Git version control system. Read the Docs supports MkDocs out-of-the-box.
+Follow the [instructions] on their site to arrange the files in your repository properly,
 create an account and point it at your publicly hosted repository. If properly
 configured, your documentation will update each time you push commits to your
 public repository.
 
-NOTE:
-To benefit from all of the [features] offered by Read the Docs, you will need
-to use the [Read the Docs theme][theme] which ships with MkDocs. The various
-themes which may be referenced in Read the Docs' documentation are Sphinx
-specific themes and will not work with MkDocs.
-
 [rtd]: https://readthedocs.org/
 [instructions]: https://docs.readthedocs.io/en/stable/intro/getting-started-with-mkdocs.html
-[features]: https://docs.readthedocs.io/en/latest/features.html
-[theme]: ./choosing-your-theme.md#readthedocs
 
 ## Other Providers
 

@@ -10,6 +10,7 @@ import traceback
 import types
 import warnings
 from collections import Counter, UserString
+from types import SimpleNamespace
 from typing import (
     Any,
     Callable,
@@ -44,6 +45,8 @@ from mkdocs.exceptions import ConfigurationError
 
 T = TypeVar('T')
 SomeConfig = TypeVar('SomeConfig', bound=Config)
+
+log = logging.getLogger(__name__)
 
 
 class SubConfig(Generic[SomeConfig], BaseConfigOption[SomeConfig]):
@@ -484,16 +487,6 @@ class IpAddress(OptionallyRequired[_IpAddressValue]):
             raise ValidationError(f"'{port_str}' is not a valid port")
 
         return _IpAddressValue(host, port)
-
-    def post_validation(self, config: Config, key_name: str):
-        host = config[key_name].host
-        if key_name == 'dev_addr' and host in ['0.0.0.0', '::']:
-            self.warnings.append(
-                f"The use of the IP address '{host}' suggests a production environment "
-                "or the use of a proxy to connect to the MkDocs server. However, "
-                "the MkDocs' server is intended for local development purposes only. "
-                "Please use a third party production-ready server instead."
-            )
 
 
 class URL(OptionallyRequired[str]):
@@ -991,6 +984,12 @@ class MarkdownExtensions(OptionallyRequired[List[str]]):
             raise ValidationError(f"Invalid config options for Markdown Extension '{ext}'.")
         self.configdata[ext] = cfg
 
+    def pre_validation(self, config, key_name):
+        # To appease validation in case it involves the `!relative` tag.
+        config._current_page = current_page = SimpleNamespace()  # type: ignore[attr-defined]
+        current_page.file = SimpleNamespace()
+        current_page.file.src_path = ''
+
     def run_validation(self, value: object) -> list[str]:
         self.configdata: dict[str, dict] = {}
         if not isinstance(value, (list, tuple, dict)):
@@ -1035,6 +1034,7 @@ class MarkdownExtensions(OptionallyRequired[List[str]]):
         return extensions
 
     def post_validation(self, config: Config, key_name: str):
+        config._current_page = None  # type: ignore[attr-defined]
         config[self.configkey] = self.configdata
 
 
@@ -1137,6 +1137,17 @@ class Plugins(OptionallyRequired[plugins.PluginCollection]):
                 "because the plugin doesn't declare `supports_multiple_instances`."
             )
 
+        # Only if the plugin doesn't have its own "enabled" config, apply a generic one.
+        if 'enabled' in config and not any(pair[0] == 'enabled' for pair in plugin.config_scheme):
+            enabled = config.pop('enabled')
+            if not isinstance(enabled, bool):
+                raise ValidationError(
+                    f"Plugin '{name}' option 'enabled': Expected boolean but received: {type(enabled)}"
+                )
+            if not enabled:
+                log.debug(f"Plugin '{inst_name}' is disabled in the config, skipping.")
+                return plugin
+
         errors, warns = plugin.load_config(
             config, self._config.config_file_path if self._config else None
         )
@@ -1187,7 +1198,14 @@ class Hooks(BaseConfigOption[List[types.ModuleType]]):
         sys.modules[name] = module
         if spec.loader is None:
             raise ValidationError(f"Cannot import path '{path}' as a Python module")
-        spec.loader.exec_module(module)
+
+        old_sys_path = sys.path.copy()
+        sys.path.insert(0, os.path.dirname(path))
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.path[:] = old_sys_path
+
         return module
 
     def post_validation(self, config: Config, key_name: str):
@@ -1206,19 +1224,3 @@ class PathSpec(BaseConfigOption[pathspec.gitignore.GitIgnoreSpec]):
             return pathspec.gitignore.GitIgnoreSpec.from_lines(lines=value.splitlines())
         except ValueError as e:
             raise ValidationError(str(e))
-
-
-class _LogLevel(OptionallyRequired[int]):
-    levels: Mapping[str, int] = {
-        "warn": logging.WARNING,
-        "info": logging.INFO,
-        "ignore": logging.DEBUG,
-    }
-
-    def run_validation(self, value: object) -> int:
-        if not isinstance(value, str):
-            raise ValidationError(f'Expected a string, but a {type(value)} was given.')
-        try:
-            return self.levels[value]
-        except KeyError:
-            raise ValidationError(f'Expected one of {list(self.levels)}, got {value!r}')

@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from typing_extensions import assert_type
+
+    from mkdocs.structure.nav import Navigation
 else:
 
     def assert_type(val, typ):
@@ -138,9 +140,15 @@ class TestPluginCollection(unittest.TestCase):
             def on_page_content(self, html, **kwargs) -> None:
                 pass
 
-            @plugins.event_priority(-100)
-            def on_nav(self, nav, **kwargs) -> None:
+            @plugins.event_priority(50)
+            def _on_nav_1(self, nav: Navigation, **kwargs) -> None:
                 pass
+
+            @plugins.event_priority(-100)
+            def _on_nav_2(self, nav, **kwargs) -> None:
+                pass
+
+            on_nav = plugins.CombinedEvent(_on_nav_1, _on_nav_2)
 
             def on_page_read_source(self, **kwargs) -> None:
                 pass
@@ -151,14 +159,20 @@ class TestPluginCollection(unittest.TestCase):
 
         collection = plugins.PluginCollection()
         collection['dummy'] = dummy = DummyPlugin()
-        collection['prio'] = prio = PrioPlugin()
+        with self.assertLogs('mkdocs', level='WARNING') as cm:
+            collection['prio'] = prio = PrioPlugin()
+        self.assertEqual(
+            '\n'.join(cm.output),
+            "WARNING:mkdocs.plugins:Multiple 'on_page_read_source' handlers can't work (both plugins 'dummy' and 'prio' registered one).",
+        )
+
         self.assertEqual(
             collection.events['page_content'],
             [prio.on_page_content, dummy.on_page_content],
         )
         self.assertEqual(
             collection.events['nav'],
-            [dummy.on_nav, prio.on_nav],
+            [prio._on_nav_1, dummy.on_nav, prio._on_nav_2],
         )
         self.assertEqual(
             collection.events['page_read_source'],
@@ -180,7 +194,12 @@ class TestPluginCollection(unittest.TestCase):
         plugin1 = DummyPlugin()
         collection['foo'] = plugin1
         plugin2 = DummyPlugin()
-        collection['bar'] = plugin2
+        with self.assertLogs('mkdocs', level='WARNING') as cm:
+            collection['bar'] = plugin2
+        self.assertEqual(
+            '\n'.join(cm.output),
+            "WARNING:mkdocs.plugins:Multiple 'on_page_read_source' handlers can't work (both plugins 'foo' and 'bar' registered one).",
+        )
         self.assertEqual(list(collection.items()), [('foo', plugin1), ('bar', plugin2)])
 
     def test_run_event_on_collection(self):
@@ -200,7 +219,12 @@ class TestPluginCollection(unittest.TestCase):
         collection['foo'] = plugin1
         plugin2 = DummyPlugin()
         plugin2.load_config({'foo': 'second'})
-        collection['bar'] = plugin2
+        with self.assertLogs('mkdocs', level='WARNING') as cm:
+            collection['bar'] = plugin2
+        self.assertEqual(
+            '\n'.join(cm.output),
+            "WARNING:mkdocs.plugins:Multiple 'on_page_read_source' handlers can't work (both plugins 'foo' and 'bar' registered one).",
+        )
         self.assertEqual(
             collection.on_page_content('page content', page=None, config={}, files=[]),
             'second new page content',

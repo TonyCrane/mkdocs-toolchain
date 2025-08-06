@@ -18,6 +18,7 @@ import threading
 import time
 import traceback
 import urllib.parse
+import webbrowser
 import wsgiref.simple_server
 import wsgiref.util
 from typing import Any, BinaryIO, Callable, Iterable
@@ -78,7 +79,16 @@ class _LoggerAdapter(logging.LoggerAdapter):
         return time.strftime("[%H:%M:%S] ") + msg, kwargs
 
 
-log = logging.getLogger(__name__)
+log = _LoggerAdapter(logging.getLogger(__name__), {})
+
+
+def _normalize_mount_path(mount_path: str) -> str:
+    """Ensure the mount path starts and ends with a slash."""
+    return ("/" + mount_path.lstrip("/")).rstrip("/") + "/"
+
+
+def _serve_url(host: str, port: int, path: str) -> str:
+    return f"http://{host}:{port}{_normalize_mount_path(path)}"
 
 
 class LiveReloadServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGIServer):
@@ -96,16 +106,14 @@ class LiveReloadServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGISe
         shutdown_delay: float = 0.25,
     ) -> None:
         self.builder = builder
-        self.server_name = host
-        self.server_port = port
         try:
             if isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address):
                 self.address_family = socket.AF_INET6
         except Exception:
             pass
         self.root = os.path.abspath(root)
-        self.mount_path = ("/" + mount_path.lstrip("/")).rstrip("/") + "/"
-        self.url = f"http://{self.server_name}:{self.server_port}{self.mount_path}"
+        self.mount_path = _normalize_mount_path(mount_path)
+        self.url = _serve_url(host, port, mount_path)
         self.build_delay = 0.1
         self.shutdown_delay = shutdown_delay
         # To allow custom error pages.
@@ -142,8 +150,6 @@ class LiveReloadServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGISe
         def callback(event):
             if event.is_directory:
                 return
-            if event.src_path.endswith(".DS_Store"):
-                return
             log.debug(str(event))
             with self._rebuild_cond:
                 self._want_rebuild = True
@@ -163,7 +169,7 @@ class LiveReloadServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGISe
             self._watched_paths.pop(path)
             self.observer.unschedule(self._watch_refs.pop(path))
 
-    def serve(self):
+    def serve(self, *, open_in_browser=False):
         self.server_bind()
         self.server_activate()
 
@@ -173,8 +179,13 @@ class LiveReloadServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGISe
             paths_str = ", ".join(f"'{_try_relativize_path(path)}'" for path in self._watched_paths)
             log.info(f"Watching paths for changes: {paths_str}")
 
-        log.info(f"Serving on {self.url}")
+        if open_in_browser:
+            log.info(f"Serving on {self.url} and opening it in a browser")
+        else:
+            log.info(f"Serving on {self.url}")
         self.serve_thread.start()
+        if open_in_browser:
+            webbrowser.open(self.url)
 
         self._build_loop()
 

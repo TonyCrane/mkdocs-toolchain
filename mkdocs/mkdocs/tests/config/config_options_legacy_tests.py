@@ -9,7 +9,7 @@ import sys
 import textwrap
 import unittest
 from typing import Any
-from unittest.mock import patch
+from unittest import mock
 
 import mkdocs
 from mkdocs.config import base
@@ -351,6 +351,28 @@ class IpAddressTest(TestCase):
         self.assertEqual(conf['option'].host, '127.0.0.1')
         self.assertEqual(conf['option'].port, 8000)
 
+    def test_bind_all_IPv4_address(self):
+        addr = '0.0.0.0:8000'
+
+        class Schema:
+            option = c.IpAddress(default=addr)
+
+        conf = self.get_config(Schema, {'option': None})
+        self.assertEqual(str(conf['option']), addr)
+        self.assertEqual(conf['option'].host, '0.0.0.0')
+        self.assertEqual(conf['option'].port, 8000)
+
+    def test_bind_all_IPv6_address(self):
+        addr = ':::8000'
+
+        class Schema:
+            option = c.IpAddress(default=addr)
+
+        conf = self.get_config(Schema, {'option': None})
+        self.assertEqual(str(conf['option']), addr)
+        self.assertEqual(conf['option'].host, '::')
+        self.assertEqual(conf['option'].port, 8000)
+
     @unittest.skipIf(
         sys.version_info < (3, 9, 5),
         "Leading zeros allowed in IP addresses before Python3.9.5",
@@ -380,37 +402,6 @@ class IpAddressTest(TestCase):
     def test_invalid_address_missing_port(self):
         with self.expect_error(option="Must be a string of format 'IP:PORT'"):
             self.get_config(self.Schema, {'option': '127.0.0.1'})
-
-    def test_unsupported_address(self):
-        class Schema:
-            dev_addr = c.IpAddress()
-
-        self.get_config(
-            Schema,
-            {'dev_addr': '0.0.0.0:8000'},
-            warnings=dict(
-                dev_addr="The use of the IP address '0.0.0.0' suggests a production "
-                "environment or the use of a proxy to connect to the MkDocs "
-                "server. However, the MkDocs' server is intended for local "
-                "development purposes only. Please use a third party "
-                "production-ready server instead."
-            ),
-        )
-
-    def test_unsupported_IPv6_address(self):
-        class Schema:
-            dev_addr = c.IpAddress()
-
-        self.get_config(
-            Schema,
-            {'dev_addr': ':::8000'},
-            warnings=dict(
-                dev_addr="The use of the IP address '::' suggests a production environment "
-                "or the use of a proxy to connect to the MkDocs server. However, "
-                "the MkDocs' server is intended for local development purposes "
-                "only. Please use a third party production-ready server instead."
-            ),
-        )
 
 
 class URLTest(TestCase):
@@ -1364,8 +1355,8 @@ class ConfigItemsTest(TestCase):
 
 
 class MarkdownExtensionsTest(TestCase):
-    @patch('markdown.Markdown')
-    def test_simple_list(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_simple_list(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions()
             mdx_configs = c.Private()
@@ -1377,8 +1368,8 @@ class MarkdownExtensionsTest(TestCase):
         self.assertEqual(conf['markdown_extensions'], ['foo', 'bar'])
         self.assertEqual(conf['mdx_configs'], {})
 
-    @patch('markdown.Markdown')
-    def test_list_dicts(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_list_dicts(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions()
             mdx_configs = c.Private()
@@ -1400,8 +1391,8 @@ class MarkdownExtensionsTest(TestCase):
             },
         )
 
-    @patch('markdown.Markdown')
-    def test_mixed_list(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_mixed_list(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions()
             mdx_configs = c.Private()
@@ -1421,8 +1412,8 @@ class MarkdownExtensionsTest(TestCase):
             },
         )
 
-    @patch('markdown.Markdown')
-    def test_dict_of_dicts(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_dict_of_dicts(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions()
             mdx_configs = c.Private()
@@ -1444,8 +1435,8 @@ class MarkdownExtensionsTest(TestCase):
             },
         )
 
-    @patch('markdown.Markdown')
-    def test_builtins(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_builtins(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions(builtins=['meta', 'toc'])
             mdx_configs = c.Private()
@@ -1483,8 +1474,8 @@ class MarkdownExtensionsTest(TestCase):
         self.assertEqual(conf['markdown_extensions'], ['meta', 'toc'])
         self.assertEqual(conf['mdx_configs'], {'toc': {'permalink': True}})
 
-    @patch('markdown.Markdown')
-    def test_configkey(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_configkey(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions(configkey='bar')
             bar = c.Private()
@@ -1524,16 +1515,16 @@ class MarkdownExtensionsTest(TestCase):
         self.assertEqual(conf['markdown_extensions'], [])
         self.assertEqual(conf['mdx_configs'], {})
 
-    @patch('markdown.Markdown')
-    def test_not_list(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_not_list(self):
         class Schema:
             option = c.MarkdownExtensions()
 
         with self.expect_error(option="Invalid Markdown Extensions configuration"):
             self.get_config(Schema, {'option': 'not a list'})
 
-    @patch('markdown.Markdown')
-    def test_invalid_config_option(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_invalid_config_option(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions()
 
@@ -1547,8 +1538,8 @@ class MarkdownExtensionsTest(TestCase):
         ):
             self.get_config(Schema, config)
 
-    @patch('markdown.Markdown')
-    def test_invalid_config_item(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_invalid_config_item(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions()
 
@@ -1560,8 +1551,8 @@ class MarkdownExtensionsTest(TestCase):
         with self.expect_error(markdown_extensions="Invalid Markdown Extensions configuration"):
             self.get_config(Schema, config)
 
-    @patch('markdown.Markdown')
-    def test_invalid_dict_item(self, mock_md):
+    @mock.patch('markdown.Markdown', mock.Mock())
+    def test_invalid_dict_item(self):
         class Schema:
             markdown_extensions = c.MarkdownExtensions()
 
