@@ -7,7 +7,6 @@
 # ##################################
 
 # Standard library
-import logging
 import shutil
 import unittest
 from pathlib import Path
@@ -19,9 +18,17 @@ from click.testing import CliRunner
 from mkdocs.__main__ import build_command
 from mkdocs.config import load_config
 from mkdocs.config.base import Config
+from mkdocs.plugins import get_plugin_logger
 
 # package
 from mkdocs_rss_plugin.plugin import GitRssPlugin
+from mkdocs_rss_plugin.constants import MKDOCS_LOGGER_NAME
+
+# ############################################################################
+# ########## Globals #############
+# ################################
+
+logger = get_plugin_logger(MKDOCS_LOGGER_NAME)
 
 # #############################################################################
 # ########## Classes ###############
@@ -53,7 +60,7 @@ class BaseTest(unittest.TestCase):
             plg for plg in plugins.items() if isinstance(plg[1], GitRssPlugin)
         ]
         if not len(rss_plugin_instances):
-            logging.warning(
+            logger.warning(
                 f"Plugin {plugin_name} is not part of enabled plugin in the MkDocs "
                 "configuration file: {mkdocs_yml_filepath}"
             )
@@ -66,7 +73,7 @@ class BaseTest(unittest.TestCase):
             plugin = rss_plugin_instances[1][1]
             self.assertIsInstance(plugin, GitRssPlugin)
 
-        logging.info(f"Fixture configuration loaded: {plugin.on_config(cfg_mkdocs)}")
+        logger.info(f"Fixture configuration loaded: {plugin.on_config(cfg_mkdocs)}")
 
         return plugin.config
 
@@ -107,7 +114,7 @@ class BaseTest(unittest.TestCase):
             run = runner.invoke(build_command, cmd_args)
             return run
         except Exception as err:
-            logging.critical(err)
+            logger.critical(err)
             return False
 
     def setup_clean_mkdocs_folder(
@@ -131,7 +138,7 @@ class BaseTest(unittest.TestCase):
 
         # Create empty 'testproject' folder
         if testproject_path.exists():
-            logging.warning(
+            logger.warning(
                 """This command does not work on windows.
             Refactor your test to use setup_clean_mkdocs_folder() only once"""
             )
