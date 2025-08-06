@@ -103,6 +103,7 @@ def serve(
         try:
             server.serve(open_in_browser=open_in_browser)
         except KeyboardInterrupt:
+            print()
             log.info("Shutting down...")
         finally:
             server.shutdown()

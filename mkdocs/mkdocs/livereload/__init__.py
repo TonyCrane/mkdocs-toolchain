@@ -79,7 +79,7 @@ class _LoggerAdapter(logging.LoggerAdapter):
         return time.strftime("[%H:%M:%S] ") + msg, kwargs
 
 
-log = _LoggerAdapter(logging.getLogger(__name__), {})
+log = logging.getLogger(__name__)
 
 
 def _normalize_mount_path(mount_path: str) -> str:
@@ -149,6 +149,8 @@ class LiveReloadServer(socketserver.ThreadingMixIn, wsgiref.simple_server.WSGISe
 
         def callback(event):
             if event.is_directory:
+                return
+            if event.src_path.endswith(".DS_Store"):
                 return
             log.debug(str(event))
             with self._rebuild_cond:
