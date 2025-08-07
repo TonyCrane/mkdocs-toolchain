@@ -31,6 +31,7 @@ from packaging.version import Version
 
 HERE = Path(__file__).parent.absolute()
 
+logger = logging.getLogger(f"mkdocs.plugins.git-revision-date-localized-plugin")
 
 class GitRevisionDateLocalizedPlugin(BasePlugin):
     """
@@ -106,29 +107,29 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
                 if Version(mkdocs_version) >= Version("1.6.0")
                 else custom_theme._vars.get("language")
             )
-            logging.debug("Locale '%s' extracted from the custom theme: '%s'" % (theme_locale, custom_theme.name))
+            logger.debug("Locale '%s' extracted from the custom theme: '%s'" % (theme_locale, custom_theme.name))
         elif "theme" in config and "locale" in config.get("theme"):
             custom_theme = config.get("theme")
             theme_locale = (
                 custom_theme.locale if Version(mkdocs_version) >= Version("1.6.0") else custom_theme._vars.get("locale")
             )
-            logging.debug("Locale '%s' extracted from the custom theme: '%s'" % (theme_locale, custom_theme.name))
+            logger.debug("Locale '%s' extracted from the custom theme: '%s'" % (theme_locale, custom_theme.name))
         else:
             theme_locale = None
-            logging.debug("No locale found in theme configuration (or no custom theme set)")
+            logger.debug("No locale found in theme configuration (or no custom theme set)")
 
         # First prio: plugin locale
         if plugin_locale:
             locale_set = plugin_locale
-            logging.debug("Using locale from plugin configuration: %s" % locale_set)
+            logger.debug("Using locale from plugin configuration: %s" % locale_set)
         # Second prio: theme locale
         elif theme_locale:
             locale_set = theme_locale
-            logging.debug("Locale not set in plugin. Fallback to theme configuration: %s" % locale_set)
+            logger.debug("Locale not set in plugin. Fallback to theme configuration: %s" % locale_set)
         # Lastly, fallback is English
         else:
             locale_set = "en"
-            logging.debug("No locale set. Fallback to: %s" % locale_set)
+            logger.debug("No locale set. Fallback to: %s" % locale_set)
 
         # Validate locale
         locale_set = str(locale_set)
@@ -203,7 +204,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             if not self.created_commits:
                 self.parallel_compute_commit_timestamps(files=files, original_source=original_source, is_first_commit=True)
         except Exception as e:
-            logging.warning(f"Parallel processing failed: {str(e)}.\n To fall back to serial processing, use 'enable_parallel_processing: False' setting.")
+            logger.warning(f"Parallel processing failed: {str(e)}.\n To fall back to serial processing, use 'enable_parallel_processing: False' setting.")
             raise e
             
 
@@ -233,7 +234,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         # Exclude pages specified in config
         excluded_pages = self.config.get("exclude", [])
         if exclude(page.file.src_path, excluded_pages):
-            logging.debug("Excluding page " + page.file.src_path)
+            logger.debug("Excluding page " + page.file.src_path)
             return markdown
 
         # Find the locale
@@ -350,7 +351,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             # See also https://github.com/timvink/mkdocs-git-revision-date-localized-plugin/issues/111
             msg = "First revision timestamp is older than last revision timestamp for page %s. " % page.file.src_path
             msg += "This can be due to a quirk in `git` follow behaviour. You can try to set `enable_git_follow: false` in the plugin configuration."
-            logging.warning(msg)
+            logger.warning(msg)
             first_revision_hash, first_revision_timestamp = last_revision_hash, last_revision_timestamp
 
         # Creation date formats
