@@ -36,3 +36,6 @@
 
 ### mkdocs-rss-plugin
 - 规范地使用 logger（[`841e240`](https://github.com/TonyCrane/mkdocs-toolchain/commit/841e24029fe2edc7fdb753ee2defb1eef31e0e17)）
+
+### mkdocs-git-revision-date-localized-plugin
+- 规范地使用 logger（[`3b5f91a`](https://github.com/TonyCrane/mkdocs-toolchain/commit/3b5f91a60c429538ee829c51d855023597a2a7fd)）
