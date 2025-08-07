@@ -1,0 +1,34 @@
+site_name: MkDocs static i18n plugin demo
+site_url: https://ultrabug.github.io/mkdocs-static-i18n
+repo_url: https://github.com/ultrabug/mkdocs-static-i18n
+
+theme:
+  name: material
+  font: false
+  icon:
+    logo: material/file-document-multiple
+  palette:
+    primary: blue
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ultrabug/mkdocs-static-i18n
+      name: mkdocs-static-i18n on Github
+
+markdown_extensions:
+  - admonition
+
+plugins:
+  - search
+  - i18n:
+      languages:
+        - locale: en
+          name: English
+          build: true
+          default: true
+        - locale: fr
+          name: Français
+          build: true
+
+  - git-revision-date-localized

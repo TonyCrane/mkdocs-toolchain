@@ -1,0 +1,26 @@
+name: Scheduled unit tests
+# Controls when the action will run.
+# Every week "At 07:17 on Sunday."
+# See https://crontab.guru/#17_7_*_*_7
+
+# This way we know for sure package will keep working with
+# potential new downstream updates
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 7 * * 0"
+
+jobs:
+  run:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v5
+    - name: Run unit tests
+      run: |
+        git config --global user.name "Github Action"
+        git config --global user.email "githubaction@gmail.com"
+        uv run pytest
+  
